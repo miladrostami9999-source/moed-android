@@ -16,9 +16,33 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
+      - name: Prepare release signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/moed-release.jks"
+            echo "SIGNING_KEYSTORE_PATH=$RUNNER_TEMP/moed-release.jks" >> "$GITHUB_ENV"
+            echo "SIGNING_STORE_PASSWORD=$STORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "SIGNING_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "SIGNING_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "HAS_RELEASE_SIGNING=true" >> "$GITHUB_ENV"
+          fi
       - run: gradle testDebugUnitTest assembleDebug --stacktrace -PGOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_WEB_CLIENT_ID }}"
+      - name: Build signed release APK
+        if: env.HAS_RELEASE_SIGNING == 'true'
+        run: gradle assembleRelease --stacktrace -PGOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_WEB_CLIENT_ID }}"
       - uses: actions/upload-artifact@v4
         with:
           name: moed-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: env.HAS_RELEASE_SIGNING == 'true'
+        with:
+          name: moed-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30
