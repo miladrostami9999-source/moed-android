@@ -46,7 +46,17 @@ private val Ink=Color(0xFF20212B);private val Accent=Color(0xFF5B5CE2);private v
  selected?.let{DetailSheet(it,{selected=null},{vm.togglePaid(it);toast="وضعیت پرداخت تغییر کرد"},{ins,uri->vm.attach(ins,uri);toast="رسید ذخیره شد"},{vm.delete(it.item.id);selected=null;toast="آیتم حذف شد"})}
 }
 
-@OptIn(ExperimentalMaterial3Api::class) @Composable private fun TopBar(){TopAppBar(colors=TopAppBarDefaults.topAppBarColors(containerColor=Color(0xFFF7F7F9)),title={Row(verticalAlignment=Alignment.CenterVertically){Surface(color=Accent,shape=RoundedCornerShape(11.dp),modifier=Modifier.size(34.dp)){Icon(Icons.Outlined.CalendarMonth,null,Modifier.padding(7.dp),Color.White)};Spacer(Modifier.width(9.dp));Column{Text("موعد",fontWeight=FontWeight.Bold,fontSize=17.sp);Text("مدیریت پرداخت‌ها",fontSize=10.sp,color=Muted)}}},actions={Surface(color=Soft,shape=RoundedCornerShape(13.dp),modifier=Modifier.padding(end=12.dp).size(40.dp)){Box(contentAlignment=Alignment.Center){Text("مـ",color=Accent,fontWeight=FontWeight.Bold)}}}})}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable private fun TopBar() {
+ TopAppBar(
+  colors=TopAppBarDefaults.topAppBarColors(containerColor=Color(0xFFF7F7F9)),
+  title={Row(verticalAlignment=Alignment.CenterVertically){
+   Surface(color=Accent,shape=RoundedCornerShape(11.dp),modifier=Modifier.size(34.dp)){Icon(Icons.Outlined.CalendarMonth,null,Modifier.padding(7.dp),Color.White)}
+   Spacer(Modifier.width(9.dp));Column{Text("موعد",fontWeight=FontWeight.Bold,fontSize=17.sp);Text("مدیریت پرداخت‌ها",fontSize=10.sp,color=Muted)}
+  }},
+  actions={Surface(color=Soft,shape=RoundedCornerShape(13.dp),modifier=Modifier.padding(end=12.dp).size(40.dp)){Box(contentAlignment=Alignment.Center){Text("مـ",color=Accent,fontWeight=FontWeight.Bold)}}}
+ )
+}
 
 @Composable private fun HomeScreen(data:List<PaymentWithInstallments>,open:(PaymentWithInstallments)->Unit,modifier:Modifier){
  val unpaid=data.flatMap{it.installments}.filter{it.paidAt==null}.sortedBy{it.dueAt};val total=unpaid.sumOf{it.amount};val next=unpaid.firstOrNull();var filter by remember{mutableStateOf("همه")}
@@ -80,7 +90,18 @@ private val Ink=Color(0xFF20212B);private val Accent=Color(0xFF5B5CE2);private v
  if(picker)PersianDatePicker(date,{picker=false},{date=it;picker=false})
 }
 
-@Composable private fun PersianDatePicker(initial:PersianDate,dismiss:()->Unit,select:(PersianDate)->Unit){var y by remember{mutableIntStateOf(initial.year)};var m by remember{mutableIntStateOf(initial.month)};var day by remember{mutableIntStateOf(initial.day)};val first=Calendar.getInstance().apply{timeInMillis=PersianDate(y,m,1).toMillis()};val offset=(first.get(Calendar.DAY_OF_WEEK)+0)%7;AlertDialog(onDismissRequest=dismiss,title={Text("انتخاب تاریخ شمسی")},text={Column{Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){IconButton({if(m==1){m=12;y--}else m--}){Icon(Icons.Outlined.ChevronRight,null)};Column(horizontalAlignment=Alignment.CenterHorizontally){Text(persianMonthName(m),fontWeight=FontWeight.Bold);Text(faNumber(y),fontSize=11.sp,color=Muted)};IconButton({if(m==12){m=1;y++}else m++}){Icon(Icons.Outlined.ChevronLeft,null)}};Row(Modifier.fillMaxWidth()){listOf("ش","ی","د","س","چ","پ","ج").forEach{Text(it,Modifier.weight(1f),textAlign=androidx.compose.ui.text.style.TextAlign.Center,fontSize=10.sp,color=Muted)}};Column{val days=persianMonthDays(y,m);repeat(6){week->Row(Modifier.fillMaxWidth()){repeat(7){col->val d=week*7+col-offset+1;if(d in 1..days)Surface(onClick={day=d},shape=CircleShape,color=if(day==d)Accent else Color.Transparent,modifier=Modifier.weight(1f).aspectRatio(1f)){Box(contentAlignment=Alignment.Center){Text(faNumber(d),fontSize=11.sp,color=if(day==d)Color.White else Ink)}} else Spacer(Modifier.weight(1f).aspectRatio(1f))}}}}},confirmButton={TextButton({select(PersianDate(y,m,day.coerceAtMost(persianMonthDays(y,m))))}){Text("تأیید")}},dismissButton={TextButton(dismiss){Text("انصراف")}})}
+@Composable private fun PersianDatePicker(initial:PersianDate,dismiss:()->Unit,select:(PersianDate)->Unit){
+ var y by remember{mutableIntStateOf(initial.year)};var m by remember{mutableIntStateOf(initial.month)};var day by remember{mutableIntStateOf(initial.day)}
+ AlertDialog(
+  onDismissRequest=dismiss,title={Text("انتخاب تاریخ شمسی")},
+  text={Column{MonthHeader(y,m,{if(m==1){m=12;y--}else m--},{if(m==12){m=1;y++}else m++});WeekHeader();CalendarGrid(y,m,day){day=it}}},
+  confirmButton={TextButton({select(PersianDate(y,m,day.coerceAtMost(persianMonthDays(y,m))))}){Text("تأیید")}},
+  dismissButton={TextButton(dismiss){Text("انصراف")}}
+ )
+}
+@Composable private fun MonthHeader(year:Int,month:Int,previous:()->Unit,next:()->Unit){Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){IconButton(previous){Icon(Icons.Outlined.ChevronRight,null)};Column(horizontalAlignment=Alignment.CenterHorizontally){Text(persianMonthName(month),fontWeight=FontWeight.Bold);Text(faNumber(year),fontSize=11.sp,color=Muted)};IconButton(next){Icon(Icons.Outlined.ChevronLeft,null)}}}
+@Composable private fun WeekHeader(){Row(Modifier.fillMaxWidth()){listOf("ش","ی","د","س","چ","پ","ج").forEach{Text(it,Modifier.weight(1f),textAlign=androidx.compose.ui.text.style.TextAlign.Center,fontSize=10.sp,color=Muted)}}}
+@Composable private fun CalendarGrid(year:Int,month:Int,selected:Int,onSelect:(Int)->Unit){val first=Calendar.getInstance().apply{timeInMillis=PersianDate(year,month,1).toMillis()};val offset=first.get(Calendar.DAY_OF_WEEK)%7;val days=persianMonthDays(year,month);Column{repeat(6){week->Row(Modifier.fillMaxWidth()){repeat(7){col->val d=week*7+col-offset+1;if(d in 1..days){Surface(onClick={onSelect(d)},shape=CircleShape,color=if(selected==d)Accent else Color.Transparent,modifier=Modifier.weight(1f).aspectRatio(1f)){Box(contentAlignment=Alignment.Center){Text(faNumber(d),fontSize=11.sp,color=if(selected==d)Color.White else Ink)}}}else Spacer(Modifier.weight(1f).aspectRatio(1f))}}}}}
 
 @OptIn(ExperimentalMaterial3Api::class) @Composable private fun DetailSheet(row:PaymentWithInstallments,dismiss:()->Unit,toggle:(Installment)->Unit,attach:(Installment,Uri)->Unit,delete:()->Unit){var full by remember{mutableStateOf(false)};var target by remember{mutableStateOf<Installment?>(null)};val launcher=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri->if(uri!=null)target?.let{attach(it,uri)}};val paid=row.installments.count{it.paidAt!=null};val remain=row.installments.filter{it.paidAt==null};ModalBottomSheet(onDismissRequest=dismiss,dragHandle={BottomSheetDefaults.DragHandle()},sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=!full)){LazyColumn(Modifier.fillMaxWidth().padding(horizontal=18.dp),verticalArrangement=Arrangement.spacedBy(10.dp),contentPadding=PaddingValues(bottom=25.dp)){
  item{Row(verticalAlignment=Alignment.CenterVertically){Surface(color=Soft,shape=RoundedCornerShape(14.dp),modifier=Modifier.size(46.dp)){Box(contentAlignment=Alignment.Center){Icon(iconFor(row.item.iconKey),null,tint=Accent)}};Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text(row.item.title,fontWeight=FontWeight.Bold,fontSize=17.sp);Text("${row.item.category} · ${if(row.item.repeatRule=="monthly")"ماهانه" else "یک‌بار"}",fontSize=10.sp,color=Muted)};IconButton(delete){Icon(Icons.Outlined.Delete,null,tint=Danger)}}}
