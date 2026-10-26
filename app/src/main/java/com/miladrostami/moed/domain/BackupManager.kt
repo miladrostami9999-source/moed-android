@@ -46,7 +46,9 @@ object BackupManager {
     while(entry!=null){
      if(entry.name=="moed.json") json=zip.readBytes().decodeToString()
      else if(entry.name.startsWith("receipts/")){
-      val file=context.filesDir.resolve(entry.name);file.parentFile?.mkdirs();file.outputStream().use{zip.copyTo(it)}
+      val directory=context.filesDir.resolve("receipts").apply{mkdirs()}
+      val file=directory.resolve(java.io.File(entry.name).name)
+      file.outputStream().use{zip.copyTo(it)}
      }
      zip.closeEntry();entry=zip.nextEntry
     }
@@ -57,7 +59,7 @@ object BackupManager {
    val row=rows.getJSONObject(index);val item=row.getJSONObject("item");val entries=row.getJSONArray("installments")
    PaymentWithInstallments(
     PaymentItem(title=item.getString("title"),category=item.getString("category"),iconKey=item.getString("icon"),amount=item.getLong("amount"),firstDueAt=item.getLong("first"),repeatRule=item.getString("repeat"),installmentCount=item.getInt("count"),finalDueAt=if(item.isNull("final"))null else item.getLong("final"),reminderMode=item.getString("mode"),reminderDaysBefore=item.getInt("before")),
-    (0 until entries.length()).map { i -> val x=entries.getJSONObject(i);Installment(paymentItemId=0,sequence=x.getInt("sequence"),amount=x.getLong("amount"),dueAt=x.getLong("due"),paidAt=if(x.isNull("paid"))null else x.getLong("paid"),receiptPath=if(x.isNull("receipt"))null else x.getString("receipt")) }
+    (0 until entries.length()).map { i -> val x=entries.getJSONObject(i);val receipt=if(x.isNull("receipt"))null else context.filesDir.resolve("receipts").resolve(java.io.File(x.getString("receipt")).name).absolutePath;Installment(paymentItemId=0,sequence=x.getInt("sequence"),amount=x.getLong("amount"),dueAt=x.getLong("due"),paidAt=if(x.isNull("paid"))null else x.getLong("paid"),receiptPath=receipt) }
    )
   }
   dao.replaceAll(data)
