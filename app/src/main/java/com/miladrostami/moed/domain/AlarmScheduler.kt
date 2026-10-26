@@ -1,0 +1,17 @@
+package com.miladrostami.moed.domain
+
+import android.app.*
+import android.content.*
+import android.os.Build
+import com.miladrostami.moed.reminder.ReminderReceiver
+
+object AlarmScheduler {
+ fun schedule(context:Context,id:Long,title:String,at:Long,alarm:Boolean){
+  if(at<=System.currentTimeMillis())return
+  val manager=context.getSystemService(AlarmManager::class.java)
+  val intent=Intent(context,ReminderReceiver::class.java).putExtra("title",title).putExtra("id",id)
+  val pi=PendingIntent.getBroadcast(context,id.toInt(),intent,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+  if(alarm && (Build.VERSION.SDK_INT<31 || manager.canScheduleExactAlarms())) manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,at,pi)
+  else manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,at,pi)
+ }
+}

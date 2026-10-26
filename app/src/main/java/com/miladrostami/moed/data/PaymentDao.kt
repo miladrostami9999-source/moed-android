@@ -1,25 +1,18 @@
 package com.miladrostami.moed.data
-
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.Query
-import androidx.room.Transaction
+import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
-@Dao
-interface PaymentDao {
-    @Query("SELECT * FROM payment_items ORDER BY firstDueAt")
-    fun observeItems(): Flow<List<PaymentItem>>
-
-    @Query("SELECT * FROM installments WHERE paymentItemId = :itemId ORDER BY sequence")
-    fun observeInstallments(itemId: Long): Flow<List<Installment>>
-
-    @Insert suspend fun insertItem(item: PaymentItem): Long
-    @Insert suspend fun insertInstallments(items: List<Installment>)
-
-    @Transaction
-    suspend fun addItem(item: PaymentItem, installments: List<Installment>) {
-        val id = insertItem(item)
-        insertInstallments(installments.map { it.copy(paymentItemId = id) })
-    }
+@Dao interface PaymentDao {
+ @Transaction @Query("SELECT * FROM payment_items ORDER BY firstDueAt") fun observeAll():Flow<List<PaymentWithInstallments>>
+ @Transaction @Query("SELECT * FROM payment_items ORDER BY firstDueAt") suspend fun getAll():List<PaymentWithInstallments>
+ @Insert suspend fun insertItem(item:PaymentItem):Long
+ @Insert suspend fun insertInstallments(items:List<Installment>)
+ @Update suspend fun updateInstallment(item:Installment)
+ @Query("DELETE FROM payment_items WHERE id=:id") suspend fun deleteItem(id:Long)
+ @Query("DELETE FROM installments WHERE paymentItemId=:id") suspend fun deleteInstallmentsForItem(id:Long)
+ @Query("DELETE FROM installments") suspend fun clearInstallments()
+ @Query("DELETE FROM payment_items") suspend fun clearItems()
+ @Transaction suspend fun addItem(item:PaymentItem,installments:List<Installment>):Long { val id=insertItem(item);insertInstallments(installments.map{it.copy(paymentItemId=id)});return id }
+ @Transaction suspend fun deletePayment(id:Long){deleteInstallmentsForItem(id);deleteItem(id)}
+ @Transaction suspend fun replaceAll(data:List<PaymentWithInstallments>){clearInstallments();clearItems();data.forEach{r->val id=insertItem(r.item.copy(id=0));insertInstallments(r.installments.map{it.copy(id=0,paymentItemId=id)})}}
 }

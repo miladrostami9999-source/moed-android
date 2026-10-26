@@ -1,0 +1,27 @@
+package com.miladrostami.moed
+
+import android.app.Application
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.miladrostami.moed.data.*
+import com.miladrostami.moed.domain.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import java.io.File
+
+class AppViewModel(app:Application):AndroidViewModel(app){
+ private val dao=(app as MoedApplication).database.paymentDao()
+ val payments=dao.observeAll().stateIn(viewModelScope,SharingStarted.WhileSubscribed(5000),emptyList())
+ fun add(title:String,category:String,icon:String,amount:Long,date:PersianDate,repeat:String,count:Int,mode:String,before:Int){viewModelScope.launch{
+  val dates=(0 until count).map{if(repeat=="monthly")addPersianMonths(date,it).toMillis() else date.toMillis()}
+  val item=PaymentItem(title=title,category=category,iconKey=icon,amount=amount,firstDueAt=dates.first(),repeatRule=repeat,installmentCount=count,finalDueAt=dates.last(),reminderMode=mode,reminderDaysBefore=before)
+  val id=dao.addItem(item,dates.mapIndexed{index,due->Installment(paymentItemId=0,sequence=index+1,amount=amount,dueAt=due)})
+  dates.forEachIndexed{index,due->AlarmScheduler.schedule(getApplication(),id*1000+index,title,due-before*86400000L,mode!="notification")}
+ }}
+ fun togglePaid(i:Installment){viewModelScope.launch{dao.updateInstallment(i.copy(paidAt=if(i.paidAt==null)System.currentTimeMillis() else null))}}
+ fun attach(i:Installment,uri:Uri){viewModelScope.launch{val dir=File(getApplication<Application>().filesDir,"receipts").apply{mkdirs()};val ext=getApplication<Application>().contentResolver.getType(uri)?.substringAfterLast('/')?:"bin";val file=File(dir,"receipt_${i.id}.$ext");getApplication<Application>().contentResolver.openInputStream(uri)?.use{input->file.outputStream().use{input.copyTo(it)}};dao.updateInstallment(i.copy(receiptPath=file.absolutePath))}}
+ fun delete(id:Long){viewModelScope.launch{dao.deletePayment(id)}}
+ fun export(uri:Uri,onDone:()->Unit){viewModelScope.launch{BackupManager.export(getApplication(),uri,dao);onDone()}}
+ fun import(uri:Uri,onDone:()->Unit){viewModelScope.launch{BackupManager.import(getApplication(),uri,dao);onDone()}}
+}
