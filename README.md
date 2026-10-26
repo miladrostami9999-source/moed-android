@@ -32,4 +32,13 @@ gradle assembleDebug
 - اعلان و آلارم دقیق با درخواست مجوزهای لازم
 - بکاپ و بازیابی محلی شامل داده‌ها و رسیدها
 
-ورود Google اختیاری است و پس از ثبت OAuth Client رسمی برنامه فعال می‌شود؛ تمام قابلیت‌های اصلی بدون حساب و بدون اینترنت کار می‌کنند.
+## فعال‌سازی ورود Google
+
+ورود Google با Credential Manager پیاده‌سازی شده و فقط به تنظیم OAuth نیاز دارد:
+
+1. در Google Auth Platform یک پروژه و OAuth consent screen بسازید.
+2. یک OAuth Client از نوع Android برای پکیج `com.miladrostami.moed` و SHA-1 کلید امضای ثابت ایجاد کنید.
+3. یک OAuth Client از نوع Web application بسازید.
+4. مقدار Web Client ID را در Secret مخزن GitHub با نام `GOOGLE_WEB_CLIENT_ID` ذخیره کنید.
+
+ورود Google اختیاری است؛ تمام قابلیت‌های اصلی بدون حساب و اینترنت کار می‌کنند و خروج از حساب داده‌های محلی را حذف نمی‌کند.

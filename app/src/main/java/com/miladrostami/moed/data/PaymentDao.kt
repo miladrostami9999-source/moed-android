@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao interface PaymentDao {
  @Transaction @Query("SELECT * FROM payment_items ORDER BY firstDueAt") fun observeAll():Flow<List<PaymentWithInstallments>>
  @Transaction @Query("SELECT * FROM payment_items ORDER BY firstDueAt") suspend fun getAll():List<PaymentWithInstallments>
+ @Transaction @Query("SELECT * FROM payment_items WHERE id=:id") suspend fun getById(id:Long):PaymentWithInstallments?
  @Insert suspend fun insertItem(item:PaymentItem):Long
  @Insert suspend fun insertInstallments(items:List<Installment>)
  @Update suspend fun updateInstallment(item:Installment)
