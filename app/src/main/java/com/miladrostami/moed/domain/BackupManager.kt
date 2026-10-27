@@ -10,9 +10,10 @@ import org.json.JSONObject
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import java.io.ByteArrayOutputStream
 
 object BackupManager {
- suspend fun export(context:Context,uri:Uri,dao:PaymentDao)=withContext(Dispatchers.IO){
+ suspend fun export(context:Context,uri:Uri,dao:PaymentDao,password:String)=withContext(Dispatchers.IO){
   val root=JSONArray()
   dao.getAll().forEach { row ->
    val item=JSONObject().apply {
@@ -28,20 +29,21 @@ object BackupManager {
    }) }
    root.put(JSONObject().put("item",item).put("installments",installments))
   }
-  context.contentResolver.openOutputStream(uri)?.use { output ->
-   ZipOutputStream(output).use { zip ->
+  val buffer=ByteArrayOutputStream()
+  ZipOutputStream(buffer).use { zip ->
     zip.putNextEntry(ZipEntry("moed.json"));zip.write(root.toString().toByteArray());zip.closeEntry()
     context.filesDir.resolve("receipts").listFiles()?.forEach { file ->
      zip.putNextEntry(ZipEntry("receipts/${file.name}"));file.inputStream().use{it.copyTo(zip)};zip.closeEntry()
     }
-   }
   }
+  context.contentResolver.openOutputStream(uri)?.use { it.write(BackupCrypto.encrypt(buffer.toByteArray(),password)) }
  }
 
- suspend fun import(context:Context,uri:Uri,dao:PaymentDao)=withContext(Dispatchers.IO){
+ suspend fun import(context:Context,uri:Uri,dao:PaymentDao,password:String)=withContext(Dispatchers.IO){
   var json="[]"
-  context.contentResolver.openInputStream(uri)?.use { input ->
-   ZipInputStream(input).use { zip ->
+  val raw=context.contentResolver.openInputStream(uri)?.use{it.readBytes()}?:error("فایل بکاپ خوانده نشد")
+  val clear=BackupCrypto.decryptOrLegacy(raw,password)
+  ZipInputStream(clear.inputStream()).use { zip ->
     var entry=zip.nextEntry
     while(entry!=null){
      if(entry.name=="moed.json") json=zip.readBytes().decodeToString()
@@ -52,7 +54,6 @@ object BackupManager {
      }
      zip.closeEntry();entry=zip.nextEntry
     }
-   }
   }
   val rows=JSONArray(json)
   val data=(0 until rows.length()).map { index ->

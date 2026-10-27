@@ -33,6 +33,6 @@ class AppViewModel(app:Application):AndroidViewModel(app){
  fun attach(i:Installment,uri:Uri){viewModelScope.launch{val dir=File(getApplication<Application>().filesDir,"receipts").apply{mkdirs()};i.receiptPath?.let{File(it).delete()};val ext=getApplication<Application>().contentResolver.getType(uri)?.substringAfterLast('/')?:"bin";val file=File(dir,"receipt_${i.id}.$ext");getApplication<Application>().contentResolver.openInputStream(uri)?.use{input->file.outputStream().use{input.copyTo(it)}};dao.updateInstallment(i.copy(receiptPath=file.absolutePath))}}
  fun deleteReceipt(i:Installment){viewModelScope.launch{i.receiptPath?.let{File(it).delete()};dao.updateInstallment(i.copy(receiptPath=null))}}
  fun delete(id:Long){viewModelScope.launch{dao.getById(id)?.installments?.forEach{AlarmScheduler.cancel(getApplication(),id*1000+it.sequence-1);it.receiptPath?.let{path->File(path).delete()}};dao.deletePayment(id)}}
- fun export(uri:Uri,onDone:()->Unit){viewModelScope.launch{BackupManager.export(getApplication(),uri,dao);onDone()}}
- fun import(uri:Uri,onDone:()->Unit){viewModelScope.launch{BackupManager.import(getApplication(),uri,dao);onDone()}}
+ fun export(uri:Uri,password:String,onDone:(Result<Unit>)->Unit){viewModelScope.launch{onDone(runCatching{BackupManager.export(getApplication(),uri,dao,password)})}}
+ fun import(uri:Uri,password:String,onDone:(Result<Unit>)->Unit){viewModelScope.launch{onDone(runCatching{BackupManager.import(getApplication(),uri,dao,password)})}}
 }
