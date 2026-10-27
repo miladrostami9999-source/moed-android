@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import com.miladrostami.moed.data.*
 import com.miladrostami.moed.domain.*
 
@@ -106,9 +108,9 @@ private fun dayStart(time:Long)=java.util.Calendar.getInstance().apply{timeInMil
   item{Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){QuickMetric(tx("تعداد پرداخت","Payments"),faNumber(paid.size),tx("در بازهٔ انتخابی","in this period"),Icons.Outlined.ReceiptLong,Modifier.weight(1f));QuickMetric(tx("میانگین پرداخت","Average payment"),money(average),tx("تومان در هر پرداخت","toman per payment"),Icons.Outlined.Analytics,Modifier.weight(1f))}}
   item{DashboardPanel(tx("روند پرداخت‌ها","Payment activity"),tx("مبلغ پرداخت‌شده در طول بازه","Amount paid over the selected period")){
    if(total==0L)Text(tx("پس از ثبت پرداخت، نمودار اینجا شکل می‌گیرد.","Your chart will appear after you record a payment."),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(vertical=20.dp))else{
-    val max=buckets.maxOf{it.amount}.coerceAtLeast(1);val color=MaterialTheme.colorScheme.primary;val track=MaterialTheme.colorScheme.surfaceVariant
+    val max=buckets.maxOf{it.amount}.coerceAtLeast(1);val color=MaterialTheme.colorScheme.primary;val track=MaterialTheme.colorScheme.surfaceVariant;val rtl=LocalLayoutDirection.current==LayoutDirection.Rtl
     val desc=buckets.joinToString{ "${it.label}: ${money(it.amount)} ${tx("تومان","toman")}" }
-    Canvas(Modifier.fillMaxWidth().height(140.dp).padding(top=18.dp).semantics{contentDescription=desc}){val slot=size.width/buckets.size;val width=slot*.48f;buckets.forEachIndexed{index,b->val x=slot*index+(slot-width)/2;drawRoundRect(track,Offset(x,0f),androidx.compose.ui.geometry.Size(width,size.height),androidx.compose.ui.geometry.CornerRadius(5.dp.toPx()));if(b.amount>0){val height=(b.amount.toFloat()/max)*size.height;drawRoundRect(color,Offset(x,size.height-height),androidx.compose.ui.geometry.Size(width,height),androidx.compose.ui.geometry.CornerRadius(5.dp.toPx()))}}}
+    Canvas(Modifier.fillMaxWidth().height(140.dp).padding(top=18.dp).semantics{contentDescription=desc}){val slot=size.width/buckets.size;val width=slot*.48f;buckets.forEachIndexed{index,b->val x=slot*(if(rtl)buckets.lastIndex-index else index)+(slot-width)/2;drawRoundRect(track,Offset(x,0f),androidx.compose.ui.geometry.Size(width,size.height),androidx.compose.ui.geometry.CornerRadius(5.dp.toPx()));if(b.amount>0){val height=(b.amount.toFloat()/max)*size.height;drawRoundRect(color,Offset(x,size.height-height),androidx.compose.ui.geometry.Size(width,height),androidx.compose.ui.geometry.CornerRadius(5.dp.toPx()))}}}
     Row(Modifier.fillMaxWidth().padding(top=10.dp)){buckets.forEach{Text(it.label,Modifier.weight(1f),fontSize=9.sp,textAlign=androidx.compose.ui.text.style.TextAlign.Center,color=MaterialTheme.colorScheme.onSurfaceVariant)}}
    }
   }}
