@@ -6,6 +6,7 @@ import android.os.Build
 import com.miladrostami.moed.reminder.ReminderReceiver
 
 object AlarmScheduler {
+ fun atTime(day:Long,hour:Int,minute:Int):Long=java.util.Calendar.getInstance().apply{timeInMillis=day;set(java.util.Calendar.HOUR_OF_DAY,hour);set(java.util.Calendar.MINUTE,minute);set(java.util.Calendar.SECOND,0);set(java.util.Calendar.MILLISECOND,0)}.timeInMillis
  fun schedule(context:Context,id:Long,title:String,at:Long,alarm:Boolean){
   if(at<=System.currentTimeMillis())return
   val manager=context.getSystemService(AlarmManager::class.java)

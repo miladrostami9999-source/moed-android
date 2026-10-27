@@ -22,7 +22,7 @@ class BootReceiver : BroadcastReceiver() {
                             context,
                             row.item.id * 1000 + installment.sequence - 1,
                             row.item.title,
-                            installment.dueAt - row.item.reminderDaysBefore * 86_400_000L,
+                            AlarmScheduler.atTime(installment.dueAt - row.item.reminderDaysBefore * 86_400_000L,row.item.reminderHour,row.item.reminderMinute),
                             row.item.reminderMode != "notification"
                         )
                     }

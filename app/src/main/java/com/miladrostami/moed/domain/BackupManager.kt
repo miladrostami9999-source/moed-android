@@ -19,7 +19,7 @@ object BackupManager {
     put("title",row.item.title);put("category",row.item.category);put("icon",row.item.iconKey)
     put("amount",row.item.amount);put("first",row.item.firstDueAt);put("repeat",row.item.repeatRule)
     put("count",row.item.installmentCount);put("final",row.item.finalDueAt?:JSONObject.NULL)
-    put("mode",row.item.reminderMode);put("before",row.item.reminderDaysBefore)
+    put("mode",row.item.reminderMode);put("before",row.item.reminderDaysBefore);put("hour",row.item.reminderHour);put("minute",row.item.reminderMinute)
    }
    val installments=JSONArray()
    row.installments.forEach { installment -> installments.put(JSONObject().apply{
@@ -58,7 +58,7 @@ object BackupManager {
   val data=(0 until rows.length()).map { index ->
    val row=rows.getJSONObject(index);val item=row.getJSONObject("item");val entries=row.getJSONArray("installments")
    PaymentWithInstallments(
-    PaymentItem(title=item.getString("title"),category=item.getString("category"),iconKey=item.getString("icon"),amount=item.getLong("amount"),firstDueAt=item.getLong("first"),repeatRule=item.getString("repeat"),installmentCount=item.getInt("count"),finalDueAt=if(item.isNull("final"))null else item.getLong("final"),reminderMode=item.getString("mode"),reminderDaysBefore=item.getInt("before")),
+    PaymentItem(title=item.getString("title"),category=item.getString("category"),iconKey=item.getString("icon"),amount=item.getLong("amount"),firstDueAt=item.getLong("first"),repeatRule=item.getString("repeat"),installmentCount=item.getInt("count"),finalDueAt=if(item.isNull("final"))null else item.getLong("final"),reminderMode=item.getString("mode"),reminderDaysBefore=item.getInt("before"),reminderHour=item.optInt("hour",9),reminderMinute=item.optInt("minute",0)),
     (0 until entries.length()).map { i -> val x=entries.getJSONObject(i);val receipt=if(x.isNull("receipt"))null else context.filesDir.resolve("receipts").resolve(java.io.File(x.getString("receipt")).name).absolutePath;Installment(paymentItemId=0,sequence=x.getInt("sequence"),amount=x.getLong("amount"),dueAt=x.getLong("due"),paidAt=if(x.isNull("paid"))null else x.getLong("paid"),receiptPath=receipt) }
    )
   }
