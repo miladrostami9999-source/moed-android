@@ -13,9 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -29,10 +27,8 @@ import java.io.File
 @Composable
 fun ReceiptPreview(path:String,dismiss:()->Unit,message:(String)->Unit){
     val context=LocalContext.current
-    val bitmap by produceState<Bitmap?>(initialValue = null, key1 = path) {
-        val rendered = withContext(Dispatchers.IO) { renderReceipt(File(path)) }
-        value = rendered
-    }
+    var bitmap by remember(path) { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(path) { bitmap = withContext(Dispatchers.IO) { renderReceipt(File(path)) } }
     AlertDialog(onDismissRequest=dismiss,title={Text("پیش‌نمایش رسید")},text={Column{if(bitmap==null)Text("پیش‌نمایش این فایل در دسترس نیست؛ می‌توانید آن را با برنامه دیگری باز کنید.") else Image(bitmap!!.asImageBitmap(),"رسید",Modifier.fillMaxWidth().heightIn(max=520.dp),contentScale=ContentScale.Fit)}},confirmButton={TextButton({runCatching{val file=File(path);val uri=FileProvider.getUriForFile(context,"${context.packageName}.files",file);val type=if(file.extension.equals("pdf",true))"application/pdf" else "image/*";context.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri,type).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))}.onFailure{message("برنامه‌ای برای بازکردن فایل پیدا نشد")}}){Text("بازکردن کامل")}},dismissButton={TextButton(dismiss){Text("بستن")}})
 }
 
