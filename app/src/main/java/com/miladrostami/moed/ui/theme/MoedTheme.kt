@@ -4,6 +4,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.view.WindowCompat
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.graphics.Color
 
@@ -29,5 +33,18 @@ private val MentoDarkColors = darkColorScheme(
 
 @Composable fun MoedTheme(mode:String="system",content: @Composable () -> Unit) {
     val dark=when(mode){"dark"->true;"light"->false;else->isSystemInDarkTheme()}
+    val view=LocalView.current
+    if(!view.isInEditMode)SideEffect {
+        (view.context as? android.app.Activity)?.window?.let { window ->
+            WindowCompat.getInsetsController(window,view).apply {
+                isAppearanceLightStatusBars=!dark
+                isAppearanceLightNavigationBars=!dark
+            }
+            @Suppress("DEPRECATION")
+            window.statusBarColor=(if(dark)MentoDarkColors else MoedColors).background.toArgb()
+            @Suppress("DEPRECATION")
+            window.navigationBarColor=(if(dark)MentoDarkColors else MoedColors).surface.toArgb()
+        }
+    }
     MaterialTheme(colorScheme = if (dark) MentoDarkColors else MoedColors, content = content)
 }
