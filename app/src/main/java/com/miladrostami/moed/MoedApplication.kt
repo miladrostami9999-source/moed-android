@@ -13,9 +13,14 @@ class MoedApplication : Application() {
             db.execSQL("ALTER TABLE payment_items ADD COLUMN reminderMinute INTEGER NOT NULL DEFAULT 0")
         }
     }
+    private val migration2To3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE payment_items ADD COLUMN reminderOffsets TEXT NOT NULL DEFAULT '1'")
+        }
+    }
     val database by lazy {
         Room.databaseBuilder(this, MoedDatabase::class.java, "moed.db")
-            .addMigrations(migration1To2)
+            .addMigrations(migration1To2, migration2To3)
             .build()
     }
 }

@@ -45,22 +45,24 @@ private val Ink=Color(0xFF20212B);private val Accent=Color(0xFF5B5CE2);private v
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun MoedApp(vm:AppViewModel=viewModel()){
  val context=LocalContext.current;val auth=remember{GoogleAuthManager(context.applicationContext)};var user by remember{mutableStateOf(auth.currentUser())};val data by vm.payments.collectAsState();var tab by remember{mutableIntStateOf(0)};var add by remember{mutableStateOf(false)};var editing by remember{mutableStateOf<PaymentWithInstallments?>(null)};var selected by remember{mutableStateOf<PaymentWithInstallments?>(null)};var previewPath by remember{mutableStateOf<String?>(null)};var toast by remember{mutableStateOf<String?>(null)}
+ var onboarded by remember{mutableStateOf(auth.hasCompletedOnboarding)}
  val snackbar=remember{SnackbarHostState()};LaunchedEffect(toast){toast?.let{snackbar.showSnackbar(it);toast=null}}
- CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl){Scaffold(snackbarHost={SnackbarHost(snackbar)},topBar={TopBar()},floatingActionButton={if(tab==0)FloatingActionButton({add=true},containerColor=Accent,contentColor=Color.White){Icon(Icons.Outlined.Add,"افزودن")}},bottomBar={NavigationBar(containerColor=Color.White){listOf(Icons.Outlined.Home to "خانه",Icons.Outlined.CalendarMonth to "تقویم",Icons.Outlined.BarChart to "گزارش",Icons.Outlined.Settings to "تنظیمات").forEachIndexed{i,p->NavigationBarItem(tab==i,{tab=i},{Icon(p.first,p.second)},label={Text(p.second)})}}}){pad->when(tab){0->HomeScreen(data,{selected=it},Modifier.padding(pad));1->CalendarScreen(data,{selected=it},Modifier.padding(pad));2->ReportScreen(data,Modifier.padding(pad));else->SettingsScreen(vm,auth,user,{user=it},{toast=it},Modifier.padding(pad))}}}
- if(add||editing!=null)AddSheet(editing,{add=false;editing=null}){title,cat,icon,amount,date,repeat,count,mode,before,hour->editing?.let{vm.update(it,title,cat,icon,amount,date,repeat,count,mode,before,hour)}?:vm.add(title,cat,icon,amount,date,repeat,count,mode,before,hour);add=false;editing=null;toast="اطلاعات با موفقیت ذخیره شد"}
+ if(!onboarded){MentoOnboarding(auth,{user=it;auth.completeOnboarding();onboarded=true},{auth.completeOnboarding();onboarded=true},{toast=it});return}
+ CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl){Scaffold(snackbarHost={SnackbarHost(snackbar)},topBar={TopBar(user){tab=3}},floatingActionButton={if(tab==0)ExtendedFloatingActionButton({add=true},{Icon(Icons.Outlined.Add,"افزودن")},{Text("پرداخت جدید")},containerColor=Accent,contentColor=Color.White)},bottomBar={NavigationBar(containerColor=Color.White){listOf(Icons.Outlined.Home to "خانه",Icons.Outlined.CalendarMonth to "تقویم",Icons.Outlined.BarChart to "گزارش",Icons.Outlined.PersonOutline to "پروفایل").forEachIndexed{i,p->NavigationBarItem(tab==i,{tab=i},{Icon(p.first,p.second)},label={Text(p.second)})}}}){pad->when(tab){0->MentoHomeScreen(data,{selected=it},{vm.togglePaid(it)},Modifier.padding(pad));1->MentoCalendarScreen(data,{selected=it},Modifier.padding(pad));2->MentoReportScreen(data,Modifier.padding(pad));else->MentoProfileScreen(vm,auth,user,{user=it},{toast=it},Modifier.padding(pad))}}}
+ if(add||editing!=null)MentoAddSheet(editing,{add=false;editing=null}){title,cat,icon,amount,date,repeat,count,mode,offsets,hour,minute->editing?.let{vm.update(it,title,cat,icon,amount,date,repeat,count,mode,offsets,hour,minute)}?:vm.add(title,cat,icon,amount,date,repeat,count,mode,offsets,hour,minute);add=false;editing=null;toast="اطلاعات با موفقیت ذخیره شد"}
  selected?.let{row->DetailSheet(row,{selected=null},{vm.togglePaid(it);toast="وضعیت پرداخت تغییر کرد"},{ins,uri->vm.attach(ins,uri);toast="رسید ذخیره شد"},{ins->vm.deleteReceipt(ins);toast="رسید حذف شد"},{path->previewPath=path},{selected=null;editing=row},{vm.delete(row.item.id);selected=null;toast="آیتم حذف شد"})}
  previewPath?.let{ReceiptPreview(it,{previewPath=null}){toast=it}}
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun TopBar() {
+@Composable private fun TopBar(user:LocalGoogleUser?,openProfile:()->Unit) {
  TopAppBar(
   colors=TopAppBarDefaults.topAppBarColors(containerColor=Color(0xFFF7F7F9)),
   title={Row(verticalAlignment=Alignment.CenterVertically){
    Surface(color=Color.Transparent,shape=RoundedCornerShape(11.dp),modifier=Modifier.size(36.dp)){Image(painterResource(R.drawable.mento_logo),"لوگوی Mento",Modifier.fillMaxSize())}
    Spacer(Modifier.width(9.dp));Column{Text("Mento",fontWeight=FontWeight.Bold,fontSize=17.sp);Text("مدیریت هوشمند پرداخت‌ها",fontSize=10.sp,color=Muted)}
   }},
-  actions={Surface(color=Soft,shape=RoundedCornerShape(13.dp),modifier=Modifier.padding(end=12.dp).size(40.dp)){Box(contentAlignment=Alignment.Center){Text("مـ",color=Accent,fontWeight=FontWeight.Bold)}}}
+  actions={Surface(onClick=openProfile,color=Soft,shape=RoundedCornerShape(13.dp),modifier=Modifier.padding(end=12.dp).size(40.dp)){Box(contentAlignment=Alignment.Center){Text(user?.name?.trim()?.take(1)?.ifBlank{"م"}?:"م",color=Accent,fontWeight=FontWeight.Bold)}}}
  )
 }
 

@@ -17,6 +17,9 @@ class GoogleAuthManager(private val context: Context) {
     private val credentials = CredentialManager.create(context)
 
     val configured: Boolean get() = BuildConfig.GOOGLE_WEB_CLIENT_ID.isNotBlank()
+    val hasCompletedOnboarding: Boolean get() = preferences.getBoolean("onboarding_done", false)
+
+    fun completeOnboarding() { preferences.edit().putBoolean("onboarding_done", true).apply() }
 
     fun currentUser(): LocalGoogleUser? {
         val id = preferences.getString("id", null) ?: return null
@@ -45,6 +48,8 @@ class GoogleAuthManager(private val context: Context) {
 
     suspend fun signOut() {
         credentials.clearCredentialState(ClearCredentialStateRequest())
-        preferences.edit().clear().apply()
+        preferences.edit().remove("id").remove("email").apply()
     }
+
+    fun saveProfile(name:String,picture:String?){preferences.edit().putString("name",name.trim()).putString("picture",picture).apply()}
 }
