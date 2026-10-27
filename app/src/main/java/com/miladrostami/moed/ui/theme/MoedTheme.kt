@@ -21,6 +21,7 @@ private val MentoDarkColors = darkColorScheme(
     outline = Color(0xFF3D4250), error = Color(0xFFFFB2BE)
 )
 
-@Composable fun MoedTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) MentoDarkColors else MoedColors, content = content)
+@Composable fun MoedTheme(mode:String="system",content: @Composable () -> Unit) {
+    val dark=when(mode){"dark"->true;"light"->false;else->isSystemInDarkTheme()}
+    MaterialTheme(colorScheme = if (dark) MentoDarkColors else MoedColors, content = content)
 }

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.animation.Crossfade
 import com.miladrostami.moed.data.*
 import com.miladrostami.moed.domain.*
 import com.miladrostami.moed.ui.theme.MoedTheme
@@ -40,17 +41,18 @@ import java.io.File
 import java.util.*
 import kotlinx.coroutines.launch
 
-class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:Bundle?){installSplashScreen();super.onCreate(savedInstanceState);setContent{MoedTheme{MoedApp()}}}}
+class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:Bundle?){installSplashScreen();super.onCreate(savedInstanceState);setContent{val prefs=remember{getSharedPreferences("mento_display",MODE_PRIVATE)};var theme by remember{mutableStateOf(prefs.getString("theme","system")?:"system")};MoedTheme(theme){MoedApp(theme){value->theme=value;prefs.edit().putString("theme",value).apply()}}}}}
 
 private val Ink=Color(0xFF20212B);private val Accent=Color(0xFF5B5CE2);private val Muted=Color(0xFF777986);private val Soft=Color(0xFFF0F0FF);private val Danger=Color(0xFFBD4054)
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable fun MoedApp(vm:AppViewModel=viewModel()){
+@Composable fun MoedApp(themeMode:String="system",setTheme:(String)->Unit={},vm:AppViewModel=viewModel()){
  val context=LocalContext.current;val auth=remember{GoogleAuthManager(context.applicationContext)};var user by remember{mutableStateOf(auth.currentUser())};val data by vm.payments.collectAsState();var tab by remember{mutableIntStateOf(0)};var add by remember{mutableStateOf(false)};var editing by remember{mutableStateOf<PaymentWithInstallments?>(null)};var selected by remember{mutableStateOf<PaymentWithInstallments?>(null)};var previewPath by remember{mutableStateOf<String?>(null)};var toast by remember{mutableStateOf<String?>(null)}
  var onboarded by remember{mutableStateOf(auth.hasCompletedOnboarding)}
  LaunchedEffect(user?.id){vm.setActiveOwner(user?.id?:"local",claimLegacy=user!=null)}
+ LaunchedEffect(data,selected?.item?.id){selected?.item?.id?.let{id->selected=data.firstOrNull{it.item.id==id}}}
  val snackbar=remember{SnackbarHostState()};LaunchedEffect(toast){toast?.let{snackbar.showSnackbar(it);toast=null}}
  if(!onboarded){MentoOnboarding(auth,{user=it;auth.completeOnboarding();onboarded=true},{auth.completeOnboarding();onboarded=true},{toast=it});return}
- CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl){Scaffold(snackbarHost={SnackbarHost(snackbar)},topBar={TopBar(user){tab=3}},floatingActionButton={if(tab==0)ExtendedFloatingActionButton(onClick={add=true},icon={Icon(Icons.Outlined.Add,"افزودن")},text={Text("پرداخت جدید")},containerColor=Accent,contentColor=Color.White)},bottomBar={NavigationBar(containerColor=MaterialTheme.colorScheme.surface){listOf(Icons.Outlined.Home to "خانه",Icons.Outlined.CalendarMonth to "تقویم",Icons.Outlined.BarChart to "گزارش",Icons.Outlined.PersonOutline to "پروفایل").forEachIndexed{i,p->NavigationBarItem(tab==i,{tab=i},{Icon(p.first,p.second)},label={Text(p.second)})}}}){pad->when(tab){0->MentoHomeScreen(data,{selected=it},{vm.togglePaid(it)},Modifier.padding(pad));1->MentoCalendarScreen(data,{selected=it},Modifier.padding(pad));2->MentoReportScreen(data,Modifier.padding(pad));else->MentoProfileScreen(vm,auth,user,{user=it},{toast=it},Modifier.padding(pad))}}}
+ CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl){Scaffold(snackbarHost={SnackbarHost(snackbar)},topBar={TopBar(user){tab=3}},floatingActionButton={if(tab==0)ExtendedFloatingActionButton(onClick={add=true},icon={Icon(Icons.Outlined.Add,"افزودن")},text={Text("پرداخت جدید")},containerColor=Accent,contentColor=Color.White)},bottomBar={NavigationBar(containerColor=MaterialTheme.colorScheme.surface){listOf(Icons.Outlined.Home to "خانه",Icons.Outlined.CalendarMonth to "تقویم",Icons.Outlined.BarChart to "گزارش",Icons.Outlined.PersonOutline to "پروفایل").forEachIndexed{i,p->NavigationBarItem(tab==i,{tab=i},{Icon(p.first,p.second)},label={Text(p.second)})}}}){pad->Crossfade(tab,label="main-navigation"){page->when(page){0->MentoHomeScreen(data,{selected=it},{vm.togglePaid(it)},Modifier.padding(pad));1->MentoCalendarScreen(data,{selected=it},Modifier.padding(pad));2->MentoReportScreen(data,Modifier.padding(pad));else->MentoProfileScreen(vm,auth,user,{user=it},{toast=it},themeMode,setTheme,Modifier.padding(pad))}}}}
  if(add||editing!=null)MentoAddSheet(editing,{add=false;editing=null}){title,cat,icon,amount,date,repeat,count,mode,offsets,hour,minute->editing?.let{vm.update(it,title,cat,icon,amount,date,repeat,count,mode,offsets,hour,minute)}?:vm.add(title,cat,icon,amount,date,repeat,count,mode,offsets,hour,minute);add=false;editing=null;toast="اطلاعات با موفقیت ذخیره شد"}
  selected?.let{row->DetailSheet(row,{selected=null},{vm.togglePaid(it);toast="وضعیت پرداخت تغییر کرد"},{ins,uri->vm.attach(ins,uri);toast="رسید ذخیره شد"},{ins->vm.deleteReceipt(ins);toast="رسید حذف شد"},{path->previewPath=path},{selected=null;editing=row},{vm.delete(row.item.id);selected=null;toast="آیتم حذف شد"})}
  previewPath?.let{ReceiptPreview(it,{previewPath=null}){toast=it}}
