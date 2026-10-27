@@ -41,7 +41,7 @@ import java.io.File
 import java.util.*
 import kotlinx.coroutines.launch
 
-class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:Bundle?){installSplashScreen();super.onCreate(savedInstanceState);setContent{val prefs=remember{getSharedPreferences("mento_display",MODE_PRIVATE)};var theme by remember{mutableStateOf(prefs.getString("theme","system")?:"system")};MoedTheme(theme){MoedApp(theme){value->theme=value;prefs.edit().putString("theme",value).apply()}}}}}
+class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:Bundle?){installSplashScreen();super.onCreate(savedInstanceState);setContent{val prefs=remember{getSharedPreferences("mento_display",MODE_PRIVATE)};var theme by remember{mutableStateOf(prefs.getString("theme","system")?:"system")};MoedTheme(theme){MoedApp(themeMode=theme,setTheme={value:String->theme=value;prefs.edit().putString("theme",value).apply()})}}}}
 
 private val Ink=Color(0xFF20212B);private val Accent=Color(0xFF5B5CE2);private val Muted=Color(0xFF777986);private val Soft=Color(0xFFF0F0FF);private val Danger=Color(0xFFBD4054)
 @OptIn(ExperimentalMaterial3Api::class)
