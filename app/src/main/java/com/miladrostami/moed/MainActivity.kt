@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.core.content.FileProvider
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,8 +57,8 @@ private val Ink=Color(0xFF20212B);private val Accent=Color(0xFF5B5CE2);private v
  TopAppBar(
   colors=TopAppBarDefaults.topAppBarColors(containerColor=Color(0xFFF7F7F9)),
   title={Row(verticalAlignment=Alignment.CenterVertically){
-   Surface(color=Accent,shape=RoundedCornerShape(11.dp),modifier=Modifier.size(34.dp)){Icon(Icons.Outlined.CalendarMonth,null,Modifier.padding(7.dp),Color.White)}
-   Spacer(Modifier.width(9.dp));Column{Text("موعد",fontWeight=FontWeight.Bold,fontSize=17.sp);Text("مدیریت پرداخت‌ها",fontSize=10.sp,color=Muted)}
+   Surface(color=Color.Transparent,shape=RoundedCornerShape(11.dp),modifier=Modifier.size(36.dp)){Image(painterResource(R.drawable.mento_logo),"لوگوی Mento",Modifier.fillMaxSize())}
+   Spacer(Modifier.width(9.dp));Column{Text("Mento",fontWeight=FontWeight.Bold,fontSize=17.sp);Text("مدیریت هوشمند پرداخت‌ها",fontSize=10.sp,color=Muted)}
   }},
   actions={Surface(color=Soft,shape=RoundedCornerShape(13.dp),modifier=Modifier.padding(end=12.dp).size(40.dp)){Box(contentAlignment=Alignment.Center){Text("مـ",color=Accent,fontWeight=FontWeight.Bold)}}}
  )
@@ -127,7 +128,7 @@ private val Ink=Color(0xFF20212B);private val Accent=Color(0xFF5B5CE2);private v
 @Composable private fun SettingsScreen(vm:AppViewModel,auth:GoogleAuthManager,user:LocalGoogleUser?,setUser:(LocalGoogleUser?)->Unit,message:(String)->Unit,modifier:Modifier){
  val context=LocalContext.current;val scope=rememberCoroutineScope();var passwordMode by remember{mutableStateOf<String?>(null)};var backupPassword by remember{mutableStateOf("")}
  val notify=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){granted:Boolean->message(if(granted)"دسترسی اعلان فعال شد" else "دسترسی اعلان داده نشد")}
- val export=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")){uri:Uri?->uri?.let{vm.export(it,backupPassword){result->message(result.fold({"بکاپ رمزگذاری‌شده ذخیره شد"},{e->e.message?:"ذخیره بکاپ ناموفق بود"}))}}}
+ val export=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")){uri:Uri?->uri?.let{vm.export(it,backupPassword){result->message(result.fold({"بکاپ رمزگذاری‌شده Mento ذخیره شد"},{e->e.message?:"ذخیره بکاپ ناموفق بود"}))}}}
  val restoreLauncher=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri:Uri?->uri?.let{vm.import(it,backupPassword){result->message(result.fold({"بکاپ با موفقیت بازیابی شد"},{e->e.message?:"بازیابی بکاپ ناموفق بود"}))}}}
  LazyColumn(modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp),contentPadding=PaddingValues(bottom=90.dp)){
   item{Text("تنظیمات",fontSize=22.sp,fontWeight=FontWeight.Bold)}
@@ -138,7 +139,7 @@ private val Ink=Color(0xFF20212B);private val Accent=Color(0xFF5B5CE2);private v
   item{SettingCard(Icons.Outlined.Restore,"بازیابی بکاپ","از بکاپ رمزدار یا نسخه‌های قدیمی"){backupPassword="";passwordMode="import"}}
   item{Surface(color=Soft,shape=RoundedCornerShape(16.dp)){Text("ورود یا خروج از Google هیچ‌کدام داده‌های مالی و رسیدهای ذخیره‌شده روی گوشی را حذف نمی‌کند.",Modifier.padding(14.dp),fontSize=10.sp,color=Muted)}}
  }
- if(passwordMode!=null)AlertDialog(onDismissRequest={passwordMode=null},title={Text(if(passwordMode=="export")"رمز بکاپ" else "رمز فایل بکاپ")},text={Column{OutlinedTextField(backupPassword,{backupPassword=it},Modifier.fillMaxWidth(),singleLine=true,label={Text("رمز")});Text(if(passwordMode=="export")"حداقل ۶ کاراکتر؛ این رمز قابل بازیابی نیست." else "برای بکاپ قدیمی بدون رمز، این کادر را خالی بگذارید.",fontSize=10.sp,color=Muted)}},confirmButton={TextButton({if(passwordMode=="export"&&backupPassword.length<6)message("رمز باید حداقل ۶ کاراکتر باشد") else {val mode=passwordMode;passwordMode=null;if(mode=="export")export.launch("moed-backup-${PersianDate.from()}.moed") else restoreLauncher.launch(arrayOf("application/octet-stream","application/zip"))}}){Text("ادامه")}},dismissButton={TextButton({passwordMode=null}){Text("انصراف")}})
+ if(passwordMode!=null)AlertDialog(onDismissRequest={passwordMode=null},title={Text(if(passwordMode=="export")"رمز بکاپ" else "رمز فایل بکاپ")},text={Column{OutlinedTextField(backupPassword,{backupPassword=it},Modifier.fillMaxWidth(),singleLine=true,label={Text("رمز")});Text(if(passwordMode=="export")"حداقل ۶ کاراکتر؛ این رمز قابل بازیابی نیست." else "برای بکاپ قدیمی بدون رمز، این کادر را خالی بگذارید.",fontSize=10.sp,color=Muted)}},confirmButton={TextButton({if(passwordMode=="export"&&backupPassword.length<6)message("رمز باید حداقل ۶ کاراکتر باشد") else {val mode=passwordMode;passwordMode=null;if(mode=="export")export.launch("mento-backup-${PersianDate.from()}.mento") else restoreLauncher.launch(arrayOf("application/octet-stream","application/zip"))}}){Text("ادامه")}},dismissButton={TextButton({passwordMode=null}){Text("انصراف")}})
 }
 @Composable private fun SettingCard(icon:androidx.compose.ui.graphics.vector.ImageVector,title:String,sub:String,click:()->Unit){Card(onClick=click,shape=RoundedCornerShape(16.dp),colors=CardDefaults.cardColors(containerColor=Color.White),border=BorderStroke(1.dp,Color(0xFFE8E8ED))){Row(Modifier.fillMaxWidth().padding(13.dp),verticalAlignment=Alignment.CenterVertically){Icon(icon,null,tint=Accent);Spacer(Modifier.width(11.dp));Column(Modifier.weight(1f)){Text(title,fontWeight=FontWeight.Bold,fontSize=12.sp);Text(sub,fontSize=9.5.sp,color=Muted)};Icon(Icons.Outlined.ChevronLeft,null,tint=Muted)}}}
 

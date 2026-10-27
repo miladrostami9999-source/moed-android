@@ -37,12 +37,12 @@ jobs:
         run: gradle assembleRelease --stacktrace -PGOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_WEB_CLIENT_ID }}"
       - uses: actions/upload-artifact@v4
         with:
-          name: moed-debug-apk
+          name: mento-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
       - uses: actions/upload-artifact@v4
         if: env.HAS_RELEASE_SIGNING == 'true'
         with:
-          name: moed-release-apk
+          name: mento-release-apk
           path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30

@@ -31,7 +31,7 @@ object BackupManager {
   }
   val buffer=ByteArrayOutputStream()
   ZipOutputStream(buffer).use { zip ->
-    zip.putNextEntry(ZipEntry("moed.json"));zip.write(root.toString().toByteArray());zip.closeEntry()
+    zip.putNextEntry(ZipEntry("mento.json"));zip.write(root.toString().toByteArray());zip.closeEntry()
     context.filesDir.resolve("receipts").listFiles()?.forEach { file ->
      zip.putNextEntry(ZipEntry("receipts/${file.name}"));file.inputStream().use{it.copyTo(zip)};zip.closeEntry()
     }
@@ -46,7 +46,7 @@ object BackupManager {
   ZipInputStream(clear.inputStream()).use { zip ->
     var entry=zip.nextEntry
     while(entry!=null){
-     if(entry.name=="moed.json") json=zip.readBytes().decodeToString()
+     if(entry.name=="mento.json"||entry.name=="moed.json") json=zip.readBytes().decodeToString()
      else if(entry.name.startsWith("receipts/")){
       val directory=context.filesDir.resolve("receipts").apply{mkdirs()}
       val file=directory.resolve(java.io.File(entry.name).name)

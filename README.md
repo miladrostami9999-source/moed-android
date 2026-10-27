@@ -1,6 +1,6 @@
-# موعد (Moed)
+# Mento
 
-اپلیکیشن آفلاین مدیریت اقساط، وام، اجاره و پرداخت‌های دوره‌ای.
+اپلیکیشن آفلاین و امن مدیریت اقساط، وام، اجاره و پرداخت‌های دوره‌ای.
 
 ## اصول پروژه
 
@@ -55,8 +55,8 @@ gradle assembleDebug
 روی رایانه‌ای که Java/JDK نصب است اجرا کنید:
 
 ```bash
-keytool -genkeypair -v -keystore moed-release.jks -alias moed -keyalg RSA -keysize 2048 -validity 10000
-keytool -list -v -keystore moed-release.jks -alias moed
+keytool -genkeypair -v -keystore mento-release.jks -alias mento -keyalg RSA -keysize 2048 -validity 10000
+keytool -list -v -keystore mento-release.jks -alias mento
 ```
 
 فایل و رمز را در جای امن نگه دارید؛ بدون این کلید امکان انتشار آپدیت با همان امضا وجود ندارد.
@@ -65,16 +65,16 @@ keytool -list -v -keystore moed-release.jks -alias moed
 
 در مسیر `Settings > Secrets and variables > Actions` این Secretها را بسازید:
 
-- `SIGNING_KEYSTORE_BASE64`: محتوای Base64 فایل `moed-release.jks`
+- `SIGNING_KEYSTORE_BASE64`: محتوای Base64 فایل `mento-release.jks`
 - `SIGNING_STORE_PASSWORD`: رمز keystore
-- `SIGNING_KEY_ALIAS`: مقدار `moed`
+- `SIGNING_KEY_ALIAS`: مقدار alias واقعی کلید شما (`mento` یا مقداری که قبلاً ساخته‌اید)
 - `SIGNING_KEY_PASSWORD`: رمز کلید
 - `GOOGLE_WEB_CLIENT_ID`: شناسه Web OAuth که در مرحله بعد ساخته می‌شود
 
 در PowerShell ویندوز می‌توانید Base64 را با این فرمان کپی کنید:
 
 ```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("moed-release.jks")) | Set-Clipboard
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("mento-release.jks")) | Set-Clipboard
 ```
 
 ### ۳. تنظیم Google Auth Platform
@@ -83,6 +83,6 @@ keytool -list -v -keystore moed-release.jks -alias moed
 2. تا پیش از انتشار، ایمیل‌های آزمایش‌کننده را در Test users اضافه کنید.
 3. OAuth Client نوع Android را با پکیج `com.miladrostami.moed` و SHA-1 خروجی فرمان `keytool -list` بسازید.
 4. OAuth Client نوع Web application بسازید و Client ID آن را در Secret با نام `GOOGLE_WEB_CLIENT_ID` قرار دهید.
-5. از تب Actions، گردش‌کار Build Android APK را دوباره اجرا کنید. خروجی `moed-release-apk` نسخه امضاشده و دارای ورود Google است.
+5. از تب Actions، گردش‌کار Build Android APK را دوباره اجرا کنید. خروجی `mento-release-apk` نسخه امضاشده و دارای ورود Google است.
 
 داده‌های مالی به حساب Google آپلود نمی‌شوند؛ حساب فقط برای هویت و پروفایل است و پایگاه داده، رسیدها و بکاپ روی دستگاه باقی می‌مانند.
