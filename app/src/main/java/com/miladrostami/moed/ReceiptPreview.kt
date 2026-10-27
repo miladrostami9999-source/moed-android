@@ -29,7 +29,10 @@ import java.io.File
 @Composable
 fun ReceiptPreview(path:String,dismiss:()->Unit,message:(String)->Unit){
     val context=LocalContext.current
-    val bitmap by produceState<Bitmap?>(initialValue=null,key1=path){this.value=withContext(Dispatchers.IO){renderReceipt(File(path))}}
+    val bitmap by produceState<Bitmap?>(initialValue = null, key1 = path) {
+        val rendered = withContext(Dispatchers.IO) { renderReceipt(File(path)) }
+        value = rendered
+    }
     AlertDialog(onDismissRequest=dismiss,title={Text("پیش‌نمایش رسید")},text={Column{if(bitmap==null)Text("پیش‌نمایش این فایل در دسترس نیست؛ می‌توانید آن را با برنامه دیگری باز کنید.") else Image(bitmap!!.asImageBitmap(),"رسید",Modifier.fillMaxWidth().heightIn(max=520.dp),contentScale=ContentScale.Fit)}},confirmButton={TextButton({runCatching{val file=File(path);val uri=FileProvider.getUriForFile(context,"${context.packageName}.files",file);val type=if(file.extension.equals("pdf",true))"application/pdf" else "image/*";context.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri,type).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))}.onFailure{message("برنامه‌ای برای بازکردن فایل پیدا نشد")}}){Text("بازکردن کامل")}},dismissButton={TextButton(dismiss){Text("بستن")}})
 }
 
