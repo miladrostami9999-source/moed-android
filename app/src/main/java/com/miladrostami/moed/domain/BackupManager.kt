@@ -1,5 +1,7 @@
 package com.miladrostami.moed.domain
 
+import com.miladrostami.moed.tx
+
 import android.content.Context
 import android.net.Uri
 import com.miladrostami.moed.data.*
@@ -29,7 +31,7 @@ object BackupManager {
    }) }
    root.put(JSONObject().put("item",item).put("installments",installments))
   }
-  val target=context.contentResolver.openOutputStream(uri)?:error("فایل مقصد باز نشد")
+  val target=context.contentResolver.openOutputStream(uri)?:error(tx("فایل مقصد باز نشد","Could not open the destination file"))
   BackupCrypto.encryptedOutput(target,password).use{encrypted->ZipOutputStream(encrypted).use { zip ->
     zip.putNextEntry(ZipEntry("mento.json"));zip.write(root.toString().toByteArray());zip.closeEntry()
     context.filesDir.resolve("receipts").listFiles()?.forEach { file ->
@@ -40,7 +42,7 @@ object BackupManager {
 
  suspend fun import(context:Context,uri:Uri,dao:PaymentDao,password:String,replace:Boolean=true)=withContext(Dispatchers.IO){
   var json="[]"
-  val raw=context.contentResolver.openInputStream(uri)?:error("فایل بکاپ خوانده نشد")
+  val raw=context.contentResolver.openInputStream(uri)?:error(tx("فایل بکاپ خوانده نشد","Could not read the backup file"))
   ZipInputStream(BackupCrypto.decryptedInput(raw,password)).use { zip ->
     var entry=zip.nextEntry
     while(entry!=null){
@@ -66,7 +68,7 @@ object BackupManager {
 
  suspend fun inspect(context:Context,uri:Uri,password:String)=withContext(Dispatchers.IO){
   var items=0;var installments=0;var receipts=0
-  val raw=context.contentResolver.openInputStream(uri)?:error("فایل بکاپ خوانده نشد")
+  val raw=context.contentResolver.openInputStream(uri)?:error(tx("فایل بکاپ خوانده نشد","Could not read the backup file"))
   ZipInputStream(BackupCrypto.decryptedInput(raw,password)).use{zip->var e=zip.nextEntry;while(e!=null){if(e.name=="mento.json"||e.name=="moed.json"){val a=JSONArray(zip.readBytes().decodeToString());items=a.length();for(i in 0 until a.length())installments+=a.getJSONObject(i).getJSONArray("installments").length()}else if(e.name.startsWith("receipts/"))receipts++;zip.closeEntry();e=zip.nextEntry}}
   BackupSummary(items,installments,receipts)
  }

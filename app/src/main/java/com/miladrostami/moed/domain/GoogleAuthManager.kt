@@ -1,5 +1,7 @@
 package com.miladrostami.moed.domain
 
+import com.miladrostami.moed.tx
+
 import android.app.Activity
 import android.content.Context
 import androidx.credentials.ClearCredentialStateRequest
@@ -34,12 +36,12 @@ class GoogleAuthManager(private val context: Context) {
     }
 
     suspend fun signIn(activity: Activity): LocalGoogleUser {
-        check(configured) { "شناسه OAuth گوگل هنوز تنظیم نشده است" }
+        check(configured) { tx("شناسه OAuth گوگل هنوز تنظیم نشده است","Google sign-in is not configured") }
         val option = GetSignInWithGoogleOption.Builder(BuildConfig.GOOGLE_WEB_CLIENT_ID).build()
         val request = GetCredentialRequest.Builder().addCredentialOption(option).build()
         val credential = credentials.getCredential(activity, request).credential
         require(credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-            "پاسخ ورود گوگل معتبر نیست"
+            tx("پاسخ ورود گوگل معتبر نیست","Invalid Google sign-in response")
         }
         val google = GoogleIdTokenCredential.createFrom(credential.data)
         val user = LocalGoogleUser(google.id, google.displayName ?: google.id, google.id, google.profilePictureUri?.toString())
@@ -49,7 +51,7 @@ class GoogleAuthManager(private val context: Context) {
     }
 
     fun registerLocal(name:String,email:String,phone:String):LocalGoogleUser {
-        require(name.trim().isNotEmpty()) { "نام و نام خانوادگی الزامی است" }
+        require(name.trim().isNotEmpty()) { tx("نام و نام خانوادگی الزامی است","Your full name is required") }
         val user=LocalGoogleUser("local",name.trim(),email.trim(),null,phone.trim().ifEmpty{null},"local")
         preferences.edit().putString("id",user.id).putString("name",user.name).putString("email",user.email)
             .putString("phone",user.phone).putString("provider","local").remove("picture").apply()
