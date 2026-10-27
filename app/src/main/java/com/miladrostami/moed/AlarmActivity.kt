@@ -5,6 +5,8 @@ import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.os.Bundle
+import android.os.Build
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -30,7 +32,7 @@ import com.miladrostami.moed.ui.theme.MoedTheme
 class AlarmActivity:ComponentActivity(){
  private var player:MediaPlayer?=null
  private val notificationId get()=intent.getLongExtra("id",1L)
- override fun onCreate(state:Bundle?){super.onCreate(state);setShowWhenLocked(true);setTurnScreenOn(true);startSound();setContent{MoedTheme{AlarmView(intent.getStringExtra("title")?:"موعد پرداخت",{stopAlarm()},{snooze()})}}}
+ override fun onCreate(state:Bundle?){super.onCreate(state);if(Build.VERSION.SDK_INT>=27){setShowWhenLocked(true);setTurnScreenOn(true)}else{@Suppress("DEPRECATION") window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)};startSound();setContent{MoedTheme{AlarmView(intent.getStringExtra("title")?:"موعد پرداخت",{stopAlarm()},{snooze()})}}}
  private fun startSound(){runCatching{val uri=RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)?:RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);player=MediaPlayer().apply{setDataSource(this@AlarmActivity,uri);setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build());isLooping=true;prepare();start()}}}
  private fun stopAlarm(){getSystemService(NotificationManager::class.java).cancel(notificationId.toInt());finish()}
  private fun snooze(){AlarmScheduler.schedule(this,notificationId,intent.getStringExtra("title")?:"موعد پرداخت",System.currentTimeMillis()+10*60*1000L,true);stopAlarm()}
