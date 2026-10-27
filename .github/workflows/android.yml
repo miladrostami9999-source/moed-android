@@ -31,7 +31,7 @@ jobs:
             echo "SIGNING_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
             echo "HAS_RELEASE_SIGNING=true" >> "$GITHUB_ENV"
           fi
-      - run: gradle testDebugUnitTest assembleDebug --stacktrace -PGOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_WEB_CLIENT_ID }}"
+      - run: gradle testDebugUnitTest lintDebug assembleDebug --stacktrace -PGOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_WEB_CLIENT_ID }}"
       - name: Build signed release APK
         if: env.HAS_RELEASE_SIGNING == 'true'
         run: gradle assembleRelease bundleRelease --stacktrace -PGOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_WEB_CLIENT_ID }}"

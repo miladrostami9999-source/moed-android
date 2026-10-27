@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android"><item android:left="24dp" android:top="24dp" android:right="24dp" android:bottom="24dp"><bitmap android:src="@drawable/mento_logo" android:gravity="center" /></item></layer-list>
+<!-- The bitmap already contains the Android adaptive-icon safe-zone padding. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <bitmap android:src="@drawable/mento_foreground" android:gravity="fill" />
+    </item>
+</layer-list>

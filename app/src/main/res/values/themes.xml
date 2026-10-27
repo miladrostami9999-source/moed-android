@@ -3,7 +3,7 @@
     <color name="mento_splash">#F7F9FF</color>
     <style name="Theme.Moed" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/mento_splash</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/mento_logo</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/mento_splash_icon</item>
         <item name="postSplashScreenTheme">@style/Theme.Moed.Main</item>
     </style>
     <style name="Theme.Moed.Main" parent="android:style/Theme.Material.Light.NoActionBar">

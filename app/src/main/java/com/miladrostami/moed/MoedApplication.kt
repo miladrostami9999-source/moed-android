@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.miladrostami.moed.data.MoedDatabase
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 class MoedApplication : Application() {
     private val migration1To2 = object : Migration(1, 2) {
@@ -24,8 +25,13 @@ class MoedApplication : Application() {
         }
     }
     val database by lazy {
-        Room.databaseBuilder(this, MoedDatabase::class.java, "moed.db")
+        val builder = Room.databaseBuilder(this, MoedDatabase::class.java, "moed.db")
             .addMigrations(migration1To2, migration2To3, migration3To4)
-            .build()
+        val existingDatabase = getDatabasePath("moed.db")
+        if (!DatabaseSecurity.isPlaintextDatabase(existingDatabase)) {
+            System.loadLibrary("sqlcipher")
+            builder.openHelperFactory(SupportOpenHelperFactory(DatabaseSecurity.passphrase(this)))
+        }
+        builder.build()
     }
 }
