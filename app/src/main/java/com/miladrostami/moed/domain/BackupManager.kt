@@ -10,7 +10,7 @@ import org.json.JSONObject
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
-import java.io.ByteArrayOutputStream
+data class BackupSummary(val items:Int,val installments:Int,val receipts:Int)
 
 object BackupManager {
  suspend fun export(context:Context,uri:Uri,dao:PaymentDao,password:String)=withContext(Dispatchers.IO){
@@ -20,7 +20,7 @@ object BackupManager {
     put("title",row.item.title);put("category",row.item.category);put("icon",row.item.iconKey)
     put("amount",row.item.amount);put("first",row.item.firstDueAt);put("repeat",row.item.repeatRule)
     put("count",row.item.installmentCount);put("final",row.item.finalDueAt?:JSONObject.NULL)
-    put("mode",row.item.reminderMode);put("before",row.item.reminderDaysBefore);put("hour",row.item.reminderHour);put("minute",row.item.reminderMinute)
+    put("mode",row.item.reminderMode);put("before",row.item.reminderDaysBefore);put("hour",row.item.reminderHour);put("minute",row.item.reminderMinute);put("offsets",row.item.reminderOffsets);put("owner",row.item.ownerKey)
    }
    val installments=JSONArray()
    row.installments.forEach { installment -> installments.put(JSONObject().apply{
@@ -29,21 +29,19 @@ object BackupManager {
    }) }
    root.put(JSONObject().put("item",item).put("installments",installments))
   }
-  val buffer=ByteArrayOutputStream()
-  ZipOutputStream(buffer).use { zip ->
+  val target=context.contentResolver.openOutputStream(uri)?:error("فایل مقصد باز نشد")
+  BackupCrypto.encryptedOutput(target,password).use{encrypted->ZipOutputStream(encrypted).use { zip ->
     zip.putNextEntry(ZipEntry("mento.json"));zip.write(root.toString().toByteArray());zip.closeEntry()
     context.filesDir.resolve("receipts").listFiles()?.forEach { file ->
      zip.putNextEntry(ZipEntry("receipts/${file.name}"));file.inputStream().use{it.copyTo(zip)};zip.closeEntry()
     }
-  }
-  context.contentResolver.openOutputStream(uri)?.use { it.write(BackupCrypto.encrypt(buffer.toByteArray(),password)) }
+  }}
  }
 
- suspend fun import(context:Context,uri:Uri,dao:PaymentDao,password:String)=withContext(Dispatchers.IO){
+ suspend fun import(context:Context,uri:Uri,dao:PaymentDao,password:String,replace:Boolean=true)=withContext(Dispatchers.IO){
   var json="[]"
-  val raw=context.contentResolver.openInputStream(uri)?.use{it.readBytes()}?:error("فایل بکاپ خوانده نشد")
-  val clear=BackupCrypto.decryptOrLegacy(raw,password)
-  ZipInputStream(clear.inputStream()).use { zip ->
+  val raw=context.contentResolver.openInputStream(uri)?:error("فایل بکاپ خوانده نشد")
+  ZipInputStream(BackupCrypto.decryptedInput(raw,password)).use { zip ->
     var entry=zip.nextEntry
     while(entry!=null){
      if(entry.name=="mento.json"||entry.name=="moed.json") json=zip.readBytes().decodeToString()
@@ -59,10 +57,17 @@ object BackupManager {
   val data=(0 until rows.length()).map { index ->
    val row=rows.getJSONObject(index);val item=row.getJSONObject("item");val entries=row.getJSONArray("installments")
    PaymentWithInstallments(
-    PaymentItem(title=item.getString("title"),category=item.getString("category"),iconKey=item.getString("icon"),amount=item.getLong("amount"),firstDueAt=item.getLong("first"),repeatRule=item.getString("repeat"),installmentCount=item.getInt("count"),finalDueAt=if(item.isNull("final"))null else item.getLong("final"),reminderMode=item.getString("mode"),reminderDaysBefore=item.getInt("before"),reminderHour=item.optInt("hour",9),reminderMinute=item.optInt("minute",0)),
+    PaymentItem(title=item.getString("title"),category=item.getString("category"),iconKey=item.getString("icon"),amount=item.getLong("amount"),firstDueAt=item.getLong("first"),repeatRule=item.getString("repeat"),installmentCount=item.getInt("count"),finalDueAt=if(item.isNull("final"))null else item.getLong("final"),reminderMode=item.getString("mode"),reminderDaysBefore=item.getInt("before"),reminderHour=item.optInt("hour",9),reminderMinute=item.optInt("minute",0),reminderOffsets=item.optString("offsets",item.optInt("before",1).toString()),ownerKey=item.optString("owner","local")),
     (0 until entries.length()).map { i -> val x=entries.getJSONObject(i);val receipt=if(x.isNull("receipt"))null else context.filesDir.resolve("receipts").resolve(java.io.File(x.getString("receipt")).name).absolutePath;Installment(paymentItemId=0,sequence=x.getInt("sequence"),amount=x.getLong("amount"),dueAt=x.getLong("due"),paidAt=if(x.isNull("paid"))null else x.getLong("paid"),receiptPath=receipt) }
    )
   }
-  dao.replaceAll(data)
+  if(replace)dao.replaceAll(data) else dao.mergeAll(data)
+ }
+
+ suspend fun inspect(context:Context,uri:Uri,password:String)=withContext(Dispatchers.IO){
+  var items=0;var installments=0;var receipts=0
+  val raw=context.contentResolver.openInputStream(uri)?:error("فایل بکاپ خوانده نشد")
+  ZipInputStream(BackupCrypto.decryptedInput(raw,password)).use{zip->var e=zip.nextEntry;while(e!=null){if(e.name=="mento.json"||e.name=="moed.json"){val a=JSONArray(zip.readBytes().decodeToString());items=a.length();for(i in 0 until a.length())installments+=a.getJSONObject(i).getJSONArray("installments").length()}else if(e.name.startsWith("receipts/"))receipts++;zip.closeEntry();e=zip.nextEntry}}
+  BackupSummary(items,installments,receipts)
  }
 }

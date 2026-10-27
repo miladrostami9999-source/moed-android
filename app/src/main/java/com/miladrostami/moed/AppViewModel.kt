@@ -12,10 +12,12 @@ import java.io.File
 
 class AppViewModel(app:Application):AndroidViewModel(app){
  private val dao=(app as MoedApplication).database.paymentDao()
- val payments=dao.observeAll().stateIn(viewModelScope,SharingStarted.WhileSubscribed(5000),emptyList())
+ private val activeOwner=MutableStateFlow("local")
+ val payments=combine(dao.observeAll(),activeOwner){rows,owner->rows.filter{it.item.ownerKey==owner}}.stateIn(viewModelScope,SharingStarted.WhileSubscribed(5000),emptyList())
+ fun setActiveOwner(owner:String,claimLegacy:Boolean=false){viewModelScope.launch{if(claimLegacy&&owner!="local"&&dao.countForOwner(owner)==0)dao.claimLocalData(owner);activeOwner.value=owner}}
  fun add(title:String,category:String,icon:String,amount:Long,date:PersianDate,repeat:String,count:Int,mode:String,offsets:Set<Int>,hour:Int,minute:Int){viewModelScope.launch{
   val dates=(0 until count).map{if(repeat=="monthly")addPersianMonths(date,it).toMillis() else date.toMillis()}
-  val normalized=offsets.ifEmpty{setOf(0)}.sortedDescending();val item=PaymentItem(title=title,category=category,iconKey=icon,amount=amount,firstDueAt=dates.first(),repeatRule=repeat,installmentCount=count,finalDueAt=dates.last(),reminderMode=mode,reminderDaysBefore=normalized.first(),reminderHour=hour,reminderMinute=minute,reminderOffsets=normalized.joinToString(","))
+  val normalized=offsets.ifEmpty{setOf(0)}.sortedDescending();val item=PaymentItem(title=title,category=category,iconKey=icon,amount=amount,firstDueAt=dates.first(),repeatRule=repeat,installmentCount=count,finalDueAt=dates.last(),reminderMode=mode,reminderDaysBefore=normalized.first(),reminderHour=hour,reminderMinute=minute,reminderOffsets=normalized.joinToString(","),ownerKey=activeOwner.value)
   val id=dao.addItem(item,dates.mapIndexed{index,due->Installment(paymentItemId=0,sequence=index+1,amount=amount,dueAt=due)})
   dates.forEachIndexed{index,due->scheduleReminders(id,index,title,due,normalized,mode,hour,minute)}
  }}
@@ -35,6 +37,8 @@ class AppViewModel(app:Application):AndroidViewModel(app){
  fun delete(id:Long){viewModelScope.launch{dao.getById(id)?.installments?.forEach{cancelReminders(id,it.sequence-1);it.receiptPath?.let{path->File(path).delete()}};dao.deletePayment(id)}}
  fun export(uri:Uri,password:String,onDone:(Result<Unit>)->Unit){viewModelScope.launch{onDone(runCatching<Unit>{BackupManager.export(getApplication(),uri,dao,password);Unit})}}
  fun import(uri:Uri,password:String,onDone:(Result<Unit>)->Unit){viewModelScope.launch{onDone(runCatching<Unit>{BackupManager.import(getApplication(),uri,dao,password);Unit})}}
+ fun import(uri:Uri,password:String,replace:Boolean,onDone:(Result<Unit>)->Unit){viewModelScope.launch{onDone(runCatching<Unit>{BackupManager.import(getApplication(),uri,dao,password,replace);Unit})}}
+ fun inspectBackup(uri:Uri,password:String,onDone:(Result<BackupSummary>)->Unit){viewModelScope.launch{onDone(runCatching{BackupManager.inspect(getApplication(),uri,password)})}}
  private fun offsets(item:PaymentItem)=item.reminderOffsets.split(",").mapNotNull{it.toIntOrNull()}.ifEmpty{listOf(item.reminderDaysBefore)}
  private fun scheduleReminders(itemId:Long,index:Int,title:String,due:Long,offsets:List<Int>,mode:String,hour:Int,minute:Int){offsets.forEachIndexed{slot,days->val at=AlarmScheduler.atTime(due-days*86_400_000L,hour,minute);if(mode=="notification"||mode=="both")AlarmScheduler.schedule(getApplication(),AlarmScheduler.reminderId(itemId,index,slot,false),title,at,false);if(mode=="alarm"||mode=="both")AlarmScheduler.schedule(getApplication(),AlarmScheduler.reminderId(itemId,index,slot,true),title,at,true)}}
  private fun cancelReminders(itemId:Long,index:Int){repeat(8){slot->AlarmScheduler.cancel(getApplication(),AlarmScheduler.reminderId(itemId,index,slot,false));AlarmScheduler.cancel(getApplication(),AlarmScheduler.reminderId(itemId,index,slot,true))}}

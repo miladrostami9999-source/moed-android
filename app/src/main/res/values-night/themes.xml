@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="mento_splash">#10121A</color>
+    <style name="Theme.Moed.Main" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item><item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#10121A</item><item name="android:navigationBarColor">#10121A</item>
+    </style>
+</resources>

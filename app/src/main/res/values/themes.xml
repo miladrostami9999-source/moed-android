@@ -1,2 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources><style name="Theme.Moed" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:fontFamily">sans</item><item name="android:windowLightStatusBar">true</item><item name="android:statusBarColor">#F7F7F9</item><item name="android:navigationBarColor">#FFFFFF</item></style></resources>
+<resources>
+    <color name="mento_splash">#F7F9FF</color>
+    <style name="Theme.Moed" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/mento_splash</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/mento_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.Moed.Main</item>
+    </style>
+    <style name="Theme.Moed.Main" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item><item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">#F7F7F9</item><item name="android:navigationBarColor">#FFFFFF</item>
+    </style>
+    <style name="Theme.Moed.Alarm" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowFullscreen">true</item><item name="android:colorAccent">#315BFF</item>
+    </style>
+</resources>

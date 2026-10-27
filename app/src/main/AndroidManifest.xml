@@ -3,6 +3,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <application android:name=".MoedApplication" android:allowBackup="false" android:label="Mento" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:theme="@style/Theme.Moed">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
@@ -10,6 +11,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".AlarmActivity" android:exported="false" android:excludeFromRecents="true" android:showWhenLocked="true" android:turnScreenOn="true" android:theme="@style/Theme.Moed.Alarm" />
         <receiver android:name=".reminder.ReminderReceiver" android:exported="false" />
         <receiver android:name=".reminder.BootReceiver" android:exported="true">
             <intent-filter>

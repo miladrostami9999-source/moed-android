@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK and AAB
 on:
   push:
     branches: [ main ]
@@ -34,7 +34,7 @@ jobs:
       - run: gradle testDebugUnitTest assembleDebug --stacktrace -PGOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_WEB_CLIENT_ID }}"
       - name: Build signed release APK
         if: env.HAS_RELEASE_SIGNING == 'true'
-        run: gradle assembleRelease --stacktrace -PGOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_WEB_CLIENT_ID }}"
+        run: gradle assembleRelease bundleRelease --stacktrace -PGOOGLE_WEB_CLIENT_ID="${{ secrets.GOOGLE_WEB_CLIENT_ID }}"
       - uses: actions/upload-artifact@v4
         with:
           name: mento-debug-apk
@@ -45,4 +45,10 @@ jobs:
         with:
           name: mento-release-apk
           path: app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: env.HAS_RELEASE_SIGNING == 'true'
+        with:
+          name: mento-release-aab
+          path: app/build/outputs/bundle/release/app-release.aab
           retention-days: 30

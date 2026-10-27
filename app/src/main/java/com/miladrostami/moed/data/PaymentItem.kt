@@ -6,6 +6,7 @@ import androidx.room.*
  val amount:Long,val firstDueAt:Long,val repeatRule:String,val installmentCount:Int,val finalDueAt:Long?,
  val reminderMode:String,val reminderDaysBefore:Int=1,val reminderHour:Int=9,val reminderMinute:Int=0,
  val reminderOffsets:String="1",
+ val ownerKey:String="local",
  val createdAt:Long=System.currentTimeMillis())
 
 @Entity(tableName="installments") data class Installment(
