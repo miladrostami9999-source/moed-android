@@ -35,6 +35,8 @@ class AlarmActivity:ComponentActivity(){
  private fun stopAlarm(){getSystemService(NotificationManager::class.java).cancel(notificationId.toInt());finish()}
  private fun snooze(){AlarmScheduler.schedule(this,notificationId,intent.getStringExtra("title")?:"موعد پرداخت",System.currentTimeMillis()+10*60*1000L,true);stopAlarm()}
  override fun onDestroy(){player?.runCatching{stop()};player?.release();player=null;super.onDestroy()}
+ @Suppress("DEPRECATION")
+ @android.annotation.SuppressLint("MissingSuperCall")
  override fun onBackPressed(){/* Alarm must be explicitly stopped or snoozed. */}
 }
 
