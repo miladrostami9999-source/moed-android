@@ -11,14 +11,20 @@ private val MoedColors = lightColorScheme(
     primary = Color(0xFF315BFF), onPrimary = Color.White,
     background = Color(0xFFF7F7F9), onBackground = Color(0xFF171923),
     surface = Color.White, onSurface = Color(0xFF171923),
+    primaryContainer = Color(0xFFE8EEFF), onPrimaryContainer = Color(0xFF153A9B),
+    secondaryContainer = Color(0xFFDDF5EE), onSecondaryContainer = Color(0xFF173F36),
+    surfaceVariant = Color(0xFFEDF0F5), onSurfaceVariant = Color(0xFF596373),
+    outline = Color(0xFFB6C0CE), outlineVariant = Color(0xFFE3E8F0),
     error = Color(0xFFBD4054)
 )
 private val MentoDarkColors = darkColorScheme(
     primary = Color(0xFF9BB1FF), onPrimary = Color(0xFF00277C),
     background = Color(0xFF10121A), onBackground = Color(0xFFF1F2F7),
     surface = Color(0xFF181B25), onSurface = Color(0xFFF1F2F7),
+    primaryContainer = Color(0xFF25375C), onPrimaryContainer = Color(0xFFDCE5FF),
+    secondaryContainer = Color(0xFF173E36), onSecondaryContainer = Color(0xFFB4F0DA),
     surfaceVariant = Color(0xFF222633), onSurfaceVariant = Color(0xFFC4C7D2),
-    outline = Color(0xFF3D4250), error = Color(0xFFFFB2BE)
+    outline = Color(0xFF596273), outlineVariant = Color(0xFF303947), error = Color(0xFFFFB2BE)
 )
 
 @Composable fun MoedTheme(mode:String="system",content: @Composable () -> Unit) {
