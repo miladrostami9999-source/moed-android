@@ -55,4 +55,4 @@ fun persianMonthName(month: Int) = if(com.miladrostami.moed.AppLanguage.code=="e
 fun persianMonthDays(year: Int, month: Int): Int = when { month <= 6 -> 31; month <= 11 -> 30; else -> ((PersianDate(year + 1, 1, 1).toMillis() - PersianDate(year, 12, 1).toMillis()) / 86_400_000L).toInt() }
 fun addPersianMonths(date: PersianDate, count: Int): PersianDate { val total = date.year * 12 + date.month - 1 + count; val year = total / 12; val month = total % 12 + 1; return PersianDate(year, month, date.day.coerceAtMost(persianMonthDays(year, month))) }
 fun faNumber(value: Any) = if(com.miladrostami.moed.AppLanguage.code=="en")value.toString() else value.toString().map { if (it in '0'..'9') "۰۱۲۳۴۵۶۷۸۹"[it - '0'] else it }.joinToString("")
-fun formatMoney(value: Long) = faNumber("%,d".format(value))
+fun formatMoney(value: Long) = com.miladrostami.moed.groupedAmount(value)
