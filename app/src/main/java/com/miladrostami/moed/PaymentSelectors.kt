@@ -16,14 +16,45 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.miladrostami.moed.domain.repeatRules
 
 internal fun categoryIcon(category:String):ImageVector=when(category){
  "قسط"->Icons.Outlined.CreditCard;"وام"->Icons.Outlined.AccountBalance;"اجاره"->Icons.Outlined.Home;"قبض"->Icons.Outlined.ReceiptLong;"خرید"->Icons.Outlined.ShoppingCart;"آموزش"->Icons.Outlined.MenuBook;"درمان"->Icons.Outlined.HealthAndSafety;"حمل‌ونقل"->Icons.Outlined.DirectionsCar;"سرگرمی"->Icons.Outlined.SportsEsports;"عمومی"->Icons.Outlined.AccountBalanceWallet;else->Icons.Outlined.EditNote
 }
 internal fun reminderTitle(mode:String)=when(mode){"alarm"->tx("آلارم دقیق","Exact alarm");"both"->tx("اعلان و آلارم","Notification and alarm");else->tx("اعلان","Notification")}
 
-@Composable internal fun SelectField(label:String,image:ImageVector,onClick:()->Unit,modifier:Modifier=Modifier){
- Surface(onClick=onClick,modifier=modifier.heightIn(min=48.dp),shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){
+internal fun frequencyTitle(rule:String)=when(rule){
+ "once"->tx("یک‌بار","One-time")
+ "quarterly"->tx("هر ۳ ماه","Every 3 months")
+ "semiannual"->tx("هر ۶ ماه","Every 6 months")
+ "yearly"->tx("سالانه","Yearly")
+ else->tx("ماهانه","Monthly")
+}
+private fun frequencyHint(rule:String)=when(rule){
+ "once"->tx("یک پرداخت در تاریخ انتخابی","A single payment on the chosen date")
+ "quarterly"->tx("هر ۳ ماه یک‌بار پرداخت می‌شود","Paid once every 3 months")
+ "semiannual"->tx("هر ۶ ماه یک‌بار پرداخت می‌شود","Paid once every 6 months")
+ "yearly"->tx("هر سال در همان تاریخ","Paid once a year on the same date")
+ else->tx("هر ماه در همان روز","Paid every month on the same day")
+}
+private fun frequencyIcon(rule:String):ImageVector=when(rule){
+ "once"->Icons.Outlined.Event
+ "quarterly"->Icons.Outlined.Repeat
+ "semiannual"->Icons.Outlined.Update
+ "yearly"->Icons.Outlined.Autorenew
+ else->Icons.Outlined.CalendarMonth
+}
+
+@Composable internal fun FrequencyDialog(selected:String,choose:(String)->Unit,dismiss:()->Unit){
+ AlertDialog(onDismissRequest=dismiss,shape=RoundedCornerShape(24.dp),containerColor=MaterialTheme.colorScheme.surface,
+  title={Text(tx("تکرار پرداخت","Payment frequency"),fontWeight=FontWeight.Bold,fontSize=19.sp)},
+  text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){
+   repeatRules.forEach{rule->SelectionOption(frequencyTitle(rule),frequencyHint(rule),frequencyIcon(rule),rule==selected,{choose(rule)})}
+  }},confirmButton={TextButton(dismiss){Text(tx("بستن","Close"))}})
+}
+
+@Composable internal fun SelectField(label:String,image:ImageVector,onClick:()->Unit,modifier:Modifier=Modifier,enabled:Boolean=true){
+ Surface(onClick=onClick,enabled=enabled,modifier=modifier.heightIn(min=48.dp),shape=RoundedCornerShape(12.dp),color=if(enabled)MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha=.4f),border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){
   Row(Modifier.padding(horizontal=12.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically){Icon(image,null,Modifier.size(20.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(8.dp));Text(label,Modifier.weight(1f),fontSize=13.sp,fontWeight=FontWeight.Medium,maxLines=1,overflow=TextOverflow.Ellipsis);Icon(Icons.Outlined.ExpandMore,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant)}
  }
 }

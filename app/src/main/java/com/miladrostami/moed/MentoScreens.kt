@@ -65,7 +65,110 @@ private data class IC(val key:String,val label:String,val image:ImageVector,val 
 private val icons=listOf(IC("card","کارت",Icons.Outlined.CreditCard,"مالی"),IC("bank","بانک",Icons.Outlined.AccountBalance,"مالی"),IC("wallet","کیف پول",Icons.Outlined.AccountBalanceWallet,"مالی"),IC("receipt","رسید",Icons.Outlined.ReceiptLong,"مالی"),IC("savings","پس‌انداز",Icons.Outlined.Savings,"مالی"),IC("home","خانه",Icons.Outlined.Home,"خانه"),IC("chair","مبلمان",Icons.Outlined.Chair,"خانه"),IC("kitchen","آشپزخانه",Icons.Outlined.Kitchen,"خانه"),IC("tv","لوازم برقی",Icons.Outlined.Tv,"خانه"),IC("bolt","انرژی",Icons.Outlined.Bolt,"خانه"),IC("car","خودرو",Icons.Outlined.DirectionsCar,"خودرو"),IC("fuel","سوخت",Icons.Outlined.LocalGasStation,"خودرو"),IC("repair","تعمیرات",Icons.Outlined.Handyman,"خودرو"),IC("bike","موتور",Icons.Outlined.TwoWheeler,"خودرو"),IC("cart","خرید",Icons.Outlined.ShoppingCart,"خرید"),IC("food","خوراک",Icons.Outlined.Restaurant,"خرید"),IC("fastfood","فست‌فود",Icons.Outlined.Fastfood,"خرید"),IC("clothes","پوشاک",Icons.Outlined.Checkroom,"خرید"),IC("book","آموزش",Icons.Outlined.MenuBook,"شخصی"),IC("health","درمان",Icons.Outlined.HealthAndSafety,"شخصی"),IC("fitness","ورزش",Icons.Outlined.FitnessCenter,"شخصی"),IC("phone","موبایل",Icons.Outlined.PhoneAndroid,"شخصی"),IC("laptop","رایانه",Icons.Outlined.Laptop,"شخصی"),IC("flight","سفر",Icons.Outlined.Flight,"تفریح"),IC("sport","سرگرمی",Icons.Outlined.SportsSoccer,"تفریح"),IC("gift","هدیه",Icons.Outlined.CardGiftcard,"سایر"),IC("pets","حیوانات",Icons.Outlined.Pets,"سایر"),IC("star","ویژه",Icons.Outlined.StarBorder,"سایر"),IC("more","سایر",Icons.Outlined.MoreHoriz,"سایر"))
 internal fun icon(k:String)=icons.firstOrNull{it.key==k}?.image?:Icons.Outlined.CreditCard
 
-@OptIn(ExperimentalMaterial3Api::class) @Composable fun MentoAddSheet(initial:PaymentWithInstallments?,dismiss:()->Unit,save:(String,String,String,Long,PersianDate,String,Int,String,Set<Int>,Int,Int)->Unit){val locked=initial?.installments?.any{it.paidAt!=null}==true;var title by remember{mutableStateOf(initial?.item?.title?:"")};var cat by remember{mutableStateOf(if(initial?.item?.category in listOf("قسط","وام","اجاره","قبض","خرید","آموزش","درمان","حمل‌ونقل","سرگرمی","عمومی")) initial?.item?.category?:"قسط" else "دلخواه")};var customCat by remember{mutableStateOf(if(cat=="دلخواه") initial?.item?.category.orEmpty() else "")};var ico by remember{mutableStateOf(initial?.item?.iconKey?:"card")};var raw by remember{mutableStateOf(initial?.item?.amount?.toString()?:"1000000")};var due by remember{mutableStateOf(initial?.item?.firstDueAt?.let(PersianDate::from)?:PersianDate.from())};var repeat by remember{mutableStateOf(initial?.item?.repeatRule?:"monthly")};var count by remember{mutableStateOf(initial?.item?.installmentCount?.toString()?:"12")};var mode by remember{mutableStateOf(initial?.item?.reminderMode?:"notification")};var offsets by remember{mutableStateOf(initial?.item?.reminderOffsets?.split(",")?.mapNotNull{it.toIntOrNull()}?.toSet()?.plus(0)?:setOf(3,0))};var hour by remember{mutableIntStateOf(initial?.item?.reminderHour?:9)};var minute by remember{mutableIntStateOf(initial?.item?.reminderMinute?:0)};var ip by remember{mutableStateOf(false)};var dp by remember{mutableStateOf(false)};var cm by remember{mutableStateOf(false)};var rm by remember{mutableStateOf(false)};var tp by remember{mutableStateOf(false)};val amount=raw.toLongOrNull()?:0L;ModalBottomSheet(onDismissRequest=dismiss,dragHandle={BottomSheetDefaults.DragHandle()}){LazyColumn(Modifier.fillMaxWidth().padding(horizontal=18.dp),verticalArrangement=Arrangement.spacedBy(10.dp),contentPadding=PaddingValues(bottom=36.dp)){item{Text(if(initial==null)tx("پرداخت جدید","New payment") else tx("ویرایش پرداخت","Edit payment"),fontSize=21.sp,fontWeight=FontWeight.ExtraBold);Text(tx("جزئیات را قدم‌به‌قدم وارد کنید","Enter your payment details"),fontSize=12.sp,color=MM)};item{Label("مشخصات");OutlinedTextField(title,{title=it},Modifier.fillMaxWidth(),label={Text(tx("عنوان","Title"))},singleLine=true,shape=RoundedCornerShape(15.dp));Spacer(Modifier.height(9.dp));Row(horizontalArrangement=Arrangement.spacedBy(9.dp)){SelectField(lx(cat),categoryIcon(cat),{cm=true},Modifier.weight(1f));OutlinedButton({ip=true},Modifier.widthIn(min=105.dp,max=150.dp).height(48.dp),shape=RoundedCornerShape(15.dp)){Icon(icon(ico),null);Spacer(Modifier.width(5.dp));Text(tx("آیکون","Icon"))}}};item{if(cat=="دلخواه"){Spacer(Modifier.height(9.dp));OutlinedTextField(customCat,{customCat=it},Modifier.fillMaxWidth(),label={Text(tx("نام دسته دلخواه","Custom category name"))},singleLine=true,shape=RoundedCornerShape(15.dp))}};item{Label("مبلغ");OutlinedTextField(amount.takeIf{it>0}?.let(::money)?:"",{raw=amountInput(it)},Modifier.fillMaxWidth(),enabled=!locked,label={Text(tx("مبلغ هر پرداخت","Amount per payment"))},suffix={Text(tx("تومان","toman"))},textStyle=LocalTextStyle.current.copy(textDirection=TextDirection.Ltr),singleLine=true,shape=RoundedCornerShape(15.dp));Text(words(amount),fontSize=11.sp,color=MP,modifier=Modifier.padding(8.dp));Slider(amount.coerceIn(1_000_000,20_000_000).toFloat(),{raw=it.toLong().toString()},valueRange=1_000_000f..20_000_000f,steps=18,enabled=!locked);Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(tx("۱ میلیون","1 million"),fontSize=10.sp,color=MM);Text(tx("۲۰ میلیون","20 million"),fontSize=10.sp,color=MM)}};item{Label("زمان‌بندی");OutlinedButton({dp=true},Modifier.fillMaxWidth().height(48.dp),enabled=!locked,shape=RoundedCornerShape(15.dp)){Icon(Icons.Outlined.CalendarMonth,null);Spacer(Modifier.width(8.dp));Text(tx("اولین سررسید: ${date(due.toMillis())}","First due date: ${date(due.toMillis())}"));Spacer(Modifier.weight(1f));Icon(Icons.Outlined.ChevronLeft,null)};Spacer(Modifier.height(9.dp));SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()){SegmentedButton(repeat=="monthly",{repeat="monthly"},SegmentedButtonDefaults.itemShape(0,2),enabled=!locked){Text(tx("ماهانه","Monthly"))};SegmentedButton(repeat=="once",{repeat="once";count="1"},SegmentedButtonDefaults.itemShape(1,2),enabled=!locked){Text(tx("یک‌بار","One-time"))}};if(repeat=="monthly"){Spacer(Modifier.height(9.dp));OutlinedTextField(count,{count=it.filter(Char::isDigit)},Modifier.fillMaxWidth(),enabled=!locked,label={Text(tx("تعداد اقساط","Number of installments"))},supportingText={Text(tx("سررسید نهایی: ${date(addPersianMonths(due,(count.toIntOrNull()?:1).coerceAtLeast(1)-1).toMillis())}","Final due date: ${date(addPersianMonths(due,(count.toIntOrNull()?:1).coerceAtLeast(1)-1).toMillis())}"))},shape=RoundedCornerShape(15.dp))}};item{Label("یادآوری");SelectField(reminderTitle(mode),if(mode=="alarm")Icons.Outlined.Alarm else Icons.Outlined.Notifications,{rm=true},Modifier.fillMaxWidth());Text(tx("چند زمان را هم‌زمان انتخاب کنید","Choose multiple reminder times"),fontSize=11.sp,color=MM);LazyRow(horizontalArrangement=Arrangement.spacedBy(7.dp)){items(listOf(7,3,1,0)){d->FilterChip(d in offsets,{if(d!=0)offsets=if(d in offsets)offsets-d else offsets+d},{Text(if(d==0)tx("روز موعد","On due date") else tx("${fa(d)} روز قبل","${fa(d)} days before"))},leadingIcon=if(d in offsets){{Icon(Icons.Outlined.Check,null,Modifier.size(16.dp))}}else null)}};OutlinedButton({tp=true},Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(15.dp)){Icon(Icons.Outlined.Schedule,null);Spacer(Modifier.width(8.dp));Text(tx("ساعت یادآوری","Reminder time"));Spacer(Modifier.weight(1f));Text("${fa(hour.toString().padStart(2,'0'))}:${fa(minute.toString().padStart(2,'0'))}",fontWeight=FontWeight.Bold)}};item{Button({val n=(count.toIntOrNull()?:1).coerceIn(1,360);if(title.isNotBlank()&&amount>0&&offsets.isNotEmpty()&&(cat!="دلخواه"||customCat.isNotBlank()))save(title,if(cat=="دلخواه")customCat.trim() else cat,ico,amount,due,repeat,n,mode,offsets,hour,minute)},Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(16.dp)){Text(tx("ذخیره و فعال‌سازی","Save and activate"),fontWeight=FontWeight.Bold)}}}};if(cm)CategoryDialog(cat,{cat=it;cm=false}){cm=false};if(rm)ReminderDialog(mode,{mode=it;rm=false}){rm=false};if(ip)IconDialog(ico,{ico=it;ip=false}){ip=false};if(dp)DateDialog(due,{dp=false}){due=it;dp=false};if(tp)TimeDialog(hour,minute,{tp=false}){h,m->hour=h;minute=m;tp=false}}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MentoAddSheet(initial:PaymentWithInstallments?,dismiss:()->Unit,save:(String,String,String,Long,PersianDate,String,Int,String,Set<Int>,Int,Int)->Unit){
+ val locked=initial?.installments?.any{it.paidAt!=null}==true
+ val builtIn=listOf("قسط","وام","اجاره","قبض","خرید","آموزش","درمان","حمل‌ونقل","سرگرمی","عمومی")
+ val startCategory=initial?.item?.category.orEmpty()
+ var title by remember{mutableStateOf(initial?.item?.title?:"")}
+ var cat by remember{mutableStateOf(when{startCategory.isEmpty()->"قسط";startCategory in builtIn->startCategory;else->"دلخواه"})}
+ var customCat by remember{mutableStateOf(if(cat=="دلخواه")startCategory else "")}
+ var ico by remember{mutableStateOf(initial?.item?.iconKey?:"card")}
+ var raw by remember{mutableStateOf(initial?.item?.amount?.toString()?:"1000000")}
+ var due by remember{mutableStateOf(initial?.item?.firstDueAt?.let(PersianDate::from)?:PersianDate.from())}
+ var repeat by remember{mutableStateOf(initial?.item?.repeatRule?:"monthly")}
+ var count by remember{mutableStateOf(initial?.item?.installmentCount?.toString()?:"12")}
+ var mode by remember{mutableStateOf(initial?.item?.reminderMode?:"notification")}
+ var offsets by remember{mutableStateOf(initial?.item?.reminderOffsets?.split(",")?.mapNotNull{it.toIntOrNull()}?.toSet()?.plus(0)?:setOf(3,0))}
+ var hour by remember{mutableIntStateOf(initial?.item?.reminderHour?:9)}
+ var minute by remember{mutableIntStateOf(initial?.item?.reminderMinute?:0)}
+ var ip by remember{mutableStateOf(false)}
+ var dp by remember{mutableStateOf(false)}
+ var cm by remember{mutableStateOf(false)}
+ var rm by remember{mutableStateOf(false)}
+ var tp by remember{mutableStateOf(false)}
+ var fp by remember{mutableStateOf(false)}
+ val amount=raw.toLongOrNull()?:0L
+ val step=repeatStepMonths(repeat)
+ ModalBottomSheet(onDismissRequest=dismiss,dragHandle={BottomSheetDefaults.DragHandle()}){
+  LazyColumn(Modifier.fillMaxWidth().padding(horizontal=18.dp),verticalArrangement=Arrangement.spacedBy(10.dp),contentPadding=PaddingValues(bottom=36.dp)){
+   item{
+    Text(if(initial==null)tx("پرداخت جدید","New payment") else tx("ویرایش پرداخت","Edit payment"),fontSize=21.sp,fontWeight=FontWeight.ExtraBold)
+    Text(tx("جزئیات را قدم‌به‌قدم وارد کنید","Enter your payment details"),fontSize=12.sp,color=MM)
+   }
+   item{
+    Label("مشخصات")
+    OutlinedTextField(title,{title=it},Modifier.fillMaxWidth(),label={Text(tx("عنوان","Title"))},singleLine=true,shape=RoundedCornerShape(15.dp))
+    Spacer(Modifier.height(9.dp))
+    Row(horizontalArrangement=Arrangement.spacedBy(9.dp)){
+     SelectField(lx(cat),categoryIcon(cat),{cm=true},Modifier.weight(1f))
+     OutlinedButton({ip=true},Modifier.widthIn(min=105.dp,max=150.dp).height(48.dp),shape=RoundedCornerShape(15.dp)){Icon(icon(ico),null);Spacer(Modifier.width(5.dp));Text(tx("آیکون","Icon"))}
+    }
+   }
+   item{
+    if(cat=="دلخواه"){
+     Spacer(Modifier.height(9.dp))
+     OutlinedTextField(customCat,{customCat=it},Modifier.fillMaxWidth(),label={Text(tx("نام دسته دلخواه","Custom category name"))},singleLine=true,shape=RoundedCornerShape(15.dp))
+    }
+   }
+   item{
+    Label("مبلغ")
+    OutlinedTextField(amount.takeIf{it>0}?.let(::money)?:"",{raw=amountInput(it)},Modifier.fillMaxWidth(),enabled=!locked,label={Text(tx("مبلغ هر پرداخت","Amount per payment"))},suffix={Text(tx("تومان","toman"))},textStyle=LocalTextStyle.current.copy(textDirection=TextDirection.Ltr),singleLine=true,shape=RoundedCornerShape(15.dp))
+    Text(words(amount),fontSize=11.sp,color=MP,modifier=Modifier.padding(8.dp))
+    Slider(amount.coerceIn(1_000_000,20_000_000).toFloat(),{raw=it.toLong().toString()},valueRange=1_000_000f..20_000_000f,steps=18,enabled=!locked)
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
+     Text(tx("۱ میلیون","1 million"),fontSize=10.sp,color=MM)
+     Text(tx("۲۰ میلیون","20 million"),fontSize=10.sp,color=MM)
+    }
+   }
+   item{
+    Label("زمان‌بندی")
+    OutlinedButton({dp=true},Modifier.fillMaxWidth().height(48.dp),enabled=!locked,shape=RoundedCornerShape(15.dp)){
+     Icon(Icons.Outlined.CalendarMonth,null);Spacer(Modifier.width(8.dp));Text(tx("اولین سررسید: ${date(due.toMillis())}","First due date: ${date(due.toMillis())}"));Spacer(Modifier.weight(1f));Icon(Icons.Outlined.ChevronLeft,null)
+    }
+    Spacer(Modifier.height(9.dp))
+    SelectField(frequencyTitle(repeat),Icons.Outlined.Repeat,{fp=true},Modifier.fillMaxWidth(),enabled=!locked)
+    if(step>0){
+     val installments=(count.toIntOrNull()?:1).coerceIn(1,360)
+     val finalDue=date(addPersianMonths(due,(installments-1)*step).toMillis())
+     Spacer(Modifier.height(9.dp))
+     OutlinedTextField(count,{count=it.filter(Char::isDigit)},Modifier.fillMaxWidth(),enabled=!locked,label={Text(tx("تعداد اقساط","Number of installments"))},supportingText={Text(tx("سررسید نهایی: $finalDue","Final due date: $finalDue"))},shape=RoundedCornerShape(15.dp))
+    }
+   }
+   item{
+    Label("یادآوری")
+    SelectField(reminderTitle(mode),if(mode=="alarm")Icons.Outlined.Alarm else Icons.Outlined.Notifications,{rm=true},Modifier.fillMaxWidth())
+    Text(tx("چند زمان را هم‌زمان انتخاب کنید","Choose multiple reminder times"),fontSize=11.sp,color=MM)
+    LazyRow(horizontalArrangement=Arrangement.spacedBy(7.dp)){
+     items(listOf(7,3,1,0)){d->
+      FilterChip(d in offsets,{if(d!=0)offsets=if(d in offsets)offsets-d else offsets+d},{Text(if(d==0)tx("روز موعد","On due date") else tx("${fa(d)} روز قبل","${fa(d)} days before"))},leadingIcon=if(d in offsets){{Icon(Icons.Outlined.Check,null,Modifier.size(16.dp))}}else null)
+     }
+    }
+    OutlinedButton({tp=true},Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(15.dp)){
+     Icon(Icons.Outlined.Schedule,null);Spacer(Modifier.width(8.dp));Text(tx("ساعت یادآوری","Reminder time"));Spacer(Modifier.weight(1f));Text("${fa(hour.toString().padStart(2,'0'))}:${fa(minute.toString().padStart(2,'0'))}",fontWeight=FontWeight.Bold)
+    }
+   }
+   item{
+    Button({
+     val n=if(repeat=="once")1 else (count.toIntOrNull()?:1).coerceIn(1,360)
+     if(title.isNotBlank()&&amount>0&&offsets.isNotEmpty()&&(cat!="دلخواه"||customCat.isNotBlank()))save(title,if(cat=="دلخواه")customCat.trim() else cat,ico,amount,due,repeat,n,mode,offsets,hour,minute)
+    },Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(16.dp)){Text(tx("ذخیره و فعال‌سازی","Save and activate"),fontWeight=FontWeight.Bold)}
+   }
+  }
+ }
+ if(cm)CategoryDialog(cat,{cat=it;cm=false}){cm=false}
+ if(fp)FrequencyDialog(repeat,{rule->
+  val previous=repeat
+  repeat=rule
+  count=when{rule=="once"->"1";previous=="once"||count.isBlank()||count==defaultInstallmentCount(previous).toString()->defaultInstallmentCount(rule).toString();else->count}
+  fp=false
+ }){fp=false}
+ if(rm)ReminderDialog(mode,{mode=it;rm=false}){rm=false}
+ if(ip)IconDialog(ico,{ico=it;ip=false}){ip=false}
+ if(dp)DateDialog(due,{dp=false}){due=it;dp=false}
+ if(tp)TimeDialog(hour,minute,{tp=false}){h,m->hour=h;minute=m;tp=false}
+}
 @Composable private fun Label(t:String){Text(when(t){"مشخصات"->tx(t,"Details");"مبلغ"->tx(t,"Amount");"زمان‌بندی"->tx(t,"Schedule");"یادآوری"->tx(t,"Reminders");else->lx(t)},fontWeight=FontWeight.Bold,fontSize=14.sp,modifier=Modifier.padding(bottom=7.dp))}
 @Composable private fun IconDialog(selected:String,choose:(String)->Unit,dismiss:()->Unit){
  var group by remember{mutableStateOf("")};var query by remember{mutableStateOf("")}
