@@ -152,12 +152,20 @@ internal fun icon(k:String)=icons.firstOrNull{it.key==k}?.image?:Icons.Outlined.
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MentoAddSheet(initial:PaymentWithInstallments?,dismiss:()->Unit,save:(String,String,String,Long,PersianDate,String,Int,String,Set<Int>,Int,Int)->Unit){
+fun MentoAddSheet(initial:PaymentWithInstallments?,usedCategories:List<Pair<String,String>>,dismiss:()->Unit,save:(String,String,String,Long,PersianDate,String,Int,String,Set<Int>,Int,Int)->Unit){
  val locked=initial?.installments?.any{it.paidAt!=null}==true
+ val context=LocalContext.current
+ val categoryStore=remember{CustomCategoryStore(context.applicationContext)}
+ val reservedNames=remember{builtInCategories+CUSTOM_CATEGORY}
+ var savedCategories by remember{mutableStateOf(categoryStore.load().let{stored->
+  val merged=stored+missingCustomCategories(stored,usedCategories,reservedNames)
+  if(merged.size!=stored.size)categoryStore.save(merged)
+  merged
+ })}
  val startCategory=initial?.item?.category.orEmpty()
  var title by remember{mutableStateOf(initial?.item?.title?:"")}
- var cat by remember{mutableStateOf(when{startCategory.isEmpty()->"قسط";startCategory in builtInCategories->startCategory;else->"دلخواه"})}
- var customCat by remember{mutableStateOf(if(cat=="دلخواه")startCategory else "")}
+ var cat by remember{mutableStateOf(when{startCategory.isEmpty()->"قسط";startCategory in builtInCategories->startCategory;savedCategories.any{it.name==startCategory}->startCategory;else->CUSTOM_CATEGORY})}
+ var customCat by remember{mutableStateOf(if(cat==CUSTOM_CATEGORY)startCategory else "")}
  var ico by remember{mutableStateOf(initial?.item?.iconKey?:"card")}
  var raw by remember{mutableStateOf(initial?.item?.amount?.toString()?:"1000000")}
  var due by remember{mutableStateOf(initial?.item?.firstDueAt?.let(PersianDate::from)?:PersianDate.from())}
@@ -186,12 +194,12 @@ fun MentoAddSheet(initial:PaymentWithInstallments?,dismiss:()->Unit,save:(String
     OutlinedTextField(title,{title=it},Modifier.fillMaxWidth(),label={Text(tx("عنوان","Title"))},singleLine=true,shape=RoundedCornerShape(15.dp))
     Spacer(Modifier.height(9.dp))
     Row(horizontalArrangement=Arrangement.spacedBy(9.dp)){
-     SelectField(lx(cat),categoryIcon(cat),{cm=true},Modifier.weight(1f))
+     SelectField(if(cat==CUSTOM_CATEGORY)customCat.ifBlank{lx(cat)} else lx(cat),if(cat in builtInCategories||cat==CUSTOM_CATEGORY)categoryIcon(cat) else icon(ico),{cm=true},Modifier.weight(1f))
      OutlinedButton({ip=true},Modifier.widthIn(min=105.dp,max=150.dp).height(48.dp),shape=RoundedCornerShape(15.dp)){Icon(icon(ico),null);Spacer(Modifier.width(5.dp));Text(tx("آیکون","Icon"))}
     }
    }
    item{
-    if(cat=="دلخواه"){
+    if(cat==CUSTOM_CATEGORY){
      Spacer(Modifier.height(9.dp))
      OutlinedTextField(customCat,{customCat=it},Modifier.fillMaxWidth(),label={Text(tx("نام دسته دلخواه","Custom category name"))},singleLine=true,shape=RoundedCornerShape(15.dp))
     }
@@ -236,12 +244,24 @@ fun MentoAddSheet(initial:PaymentWithInstallments?,dismiss:()->Unit,save:(String
    item{
     Button({
      val n=if(repeat=="once")1 else (count.toIntOrNull()?:1).coerceIn(1,360)
-     if(title.isNotBlank()&&amount>0&&offsets.isNotEmpty()&&(cat!="دلخواه"||customCat.isNotBlank()))save(title,if(cat=="دلخواه")customCat.trim() else cat,ico,amount,due,repeat,n,mode,offsets,hour,minute)
+     val finalCategory=if(cat==CUSTOM_CATEGORY)customCat.trim() else cat
+     if(title.isNotBlank()&&amount>0&&offsets.isNotEmpty()&&finalCategory.isNotBlank()){
+      if(finalCategory !in builtInCategories){val updated=upsertCustomCategory(savedCategories,finalCategory,ico,reservedNames);if(updated!=savedCategories){savedCategories=updated;categoryStore.save(updated)}}
+      save(title,finalCategory,ico,amount,due,repeat,n,mode,offsets,hour,minute)
+     }
     },Modifier.fillMaxWidth().height(48.dp),shape=RoundedCornerShape(16.dp)){Text(tx("ذخیره و فعال‌سازی","Save and activate"),fontWeight=FontWeight.Bold)}
    }
   }
  }
- if(cm)CategoryDialog(cat,{cat=it;cm=false}){cm=false}
+ if(cm)CategoryDialog(cat,savedCategories,{chosen->
+  cat=chosen
+  savedCategories.firstOrNull{it.name==chosen}?.let{ico=it.iconKey}
+  cm=false
+ },{removed->
+  val updated=savedCategories-removed
+  savedCategories=updated;categoryStore.save(updated)
+  if(cat==removed.name){cat=CUSTOM_CATEGORY;customCat=removed.name}
+ }){cm=false}
  if(fp)FrequencyDialog(repeat,{rule->
   val previous=repeat
   repeat=rule

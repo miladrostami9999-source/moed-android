@@ -62,11 +62,14 @@ private fun frequencyIcon(rule:String):ImageVector=when(rule){
  }
 }
 
-@Composable internal fun CategoryDialog(selected:String,choose:(String)->Unit,dismiss:()->Unit){
+@Composable internal fun CategoryDialog(selected:String,saved:List<CustomCategory>,choose:(String)->Unit,remove:(CustomCategory)->Unit,dismiss:()->Unit){
  AlertDialog(onDismissRequest=dismiss,shape=RoundedCornerShape(24.dp),containerColor=MaterialTheme.colorScheme.surface,
   title={Text(tx("نوع پرداخت","Payment type"),fontWeight=FontWeight.Bold,fontSize=19.sp)},
   text={LazyColumn(Modifier.heightIn(max=360.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
-   items(builtInCategories+CUSTOM_CATEGORY){category->SelectionOption(lx(category),if(category==CUSTOM_CATEGORY)tx("نام دسته را خودت انتخاب کن","Create your own category")else null,categoryIcon(category),selected==category,{choose(category)})}
+   items(builtInCategories){category->SelectionOption(lx(category),null,categoryIcon(category),selected==category,{choose(category)})}
+   if(saved.isNotEmpty())item{Text(tx("دسته‌های من","My categories"),Modifier.padding(top=6.dp,start=4.dp),fontSize=11.sp,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.onSurfaceVariant)}
+   items(saved,key={it.name}){custom->SelectionOption(custom.name,null,icon(custom.iconKey),selected==custom.name,{choose(custom.name)},trailing={IconButton({remove(custom)},Modifier.size(32.dp)){Icon(Icons.Outlined.DeleteOutline,tx("حذف دسته","Delete category"),Modifier.size(18.dp),tint=MaterialTheme.colorScheme.error)}})}
+   item{SelectionOption(lx(CUSTOM_CATEGORY),tx("یک دستهٔ جدید بساز؛ برای دفعات بعد ذخیره می‌شود","Create a new category; it is saved for next time"),Icons.Outlined.AddCircleOutline,selected==CUSTOM_CATEGORY,{choose(CUSTOM_CATEGORY)})}
   }},confirmButton={TextButton(dismiss){Text(tx("بستن","Close"))}})
 }
 
@@ -79,8 +82,8 @@ private fun frequencyIcon(rule:String):ImageVector=when(rule){
   }},confirmButton={TextButton(dismiss){Text(tx("بستن","Close"))}})
 }
 
-@Composable private fun SelectionOption(title:String,description:String?,image:ImageVector,selected:Boolean,onClick:()->Unit){
+@Composable private fun SelectionOption(title:String,description:String?,image:ImageVector,selected:Boolean,onClick:()->Unit,trailing:(@Composable ()->Unit)?=null){
  Surface(onClick=onClick,shape=RoundedCornerShape(12.dp),color=if(selected)MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,if(selected)MaterialTheme.colorScheme.primary.copy(.5f)else MaterialTheme.colorScheme.outlineVariant)){
-  Row(Modifier.fillMaxWidth().padding(10.dp),verticalAlignment=Alignment.CenterVertically){Icon(image,null,Modifier.size(20.dp),tint=if(selected)MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary);Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text(title,fontSize=13.sp,fontWeight=if(selected)FontWeight.Bold else FontWeight.Medium,color=if(selected)MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface);description?.let{Text(it,fontSize=10.sp,lineHeight=15.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)}};if(selected){Spacer(Modifier.width(6.dp));Icon(Icons.Outlined.CheckCircle,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.primary)}}
+  Row(Modifier.fillMaxWidth().padding(10.dp),verticalAlignment=Alignment.CenterVertically){Icon(image,null,Modifier.size(20.dp),tint=if(selected)MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary);Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text(title,fontSize=13.sp,fontWeight=if(selected)FontWeight.Bold else FontWeight.Medium,color=if(selected)MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface);description?.let{Text(it,fontSize=10.sp,lineHeight=15.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)}};if(selected){Spacer(Modifier.width(6.dp));Icon(Icons.Outlined.CheckCircle,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.primary)};trailing?.invoke()}
  }
 }
