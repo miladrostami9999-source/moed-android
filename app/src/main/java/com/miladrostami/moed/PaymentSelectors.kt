@@ -18,8 +18,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.miladrostami.moed.domain.repeatRules
 
+internal const val CUSTOM_CATEGORY="دلخواه"
+internal val builtInCategories=listOf("قسط","وام","اجاره","قبض","خرید","آموزش","درمان","آرایشی بهداشتی","حمل‌ونقل","بیمه","اشتراک","سرگرمی","عمومی")
+
 internal fun categoryIcon(category:String):ImageVector=when(category){
- "قسط"->Icons.Outlined.CreditCard;"وام"->Icons.Outlined.AccountBalance;"اجاره"->Icons.Outlined.Home;"قبض"->Icons.Outlined.ReceiptLong;"خرید"->Icons.Outlined.ShoppingCart;"آموزش"->Icons.Outlined.MenuBook;"درمان"->Icons.Outlined.HealthAndSafety;"حمل‌ونقل"->Icons.Outlined.DirectionsCar;"سرگرمی"->Icons.Outlined.SportsEsports;"عمومی"->Icons.Outlined.AccountBalanceWallet;else->Icons.Outlined.EditNote
+ "قسط"->Icons.Outlined.CreditCard;"وام"->Icons.Outlined.AccountBalance;"اجاره"->Icons.Outlined.Home;"قبض"->Icons.Outlined.ReceiptLong;"خرید"->Icons.Outlined.ShoppingCart;"آموزش"->Icons.Outlined.MenuBook;"درمان"->Icons.Outlined.HealthAndSafety;"حمل‌ونقل"->Icons.Outlined.DirectionsCar;"سرگرمی"->Icons.Outlined.SportsEsports;"عمومی"->Icons.Outlined.AccountBalanceWallet;"آرایشی بهداشتی"->Icons.Outlined.Spa;"بیمه"->Icons.Outlined.Security;"اشتراک"->Icons.Outlined.Subscriptions;else->Icons.Outlined.EditNote
 }
 internal fun reminderTitle(mode:String)=when(mode){"alarm"->tx("آلارم دقیق","Exact alarm");"both"->tx("اعلان و آلارم","Notification and alarm");else->tx("اعلان","Notification")}
 
@@ -63,7 +66,7 @@ private fun frequencyIcon(rule:String):ImageVector=when(rule){
  AlertDialog(onDismissRequest=dismiss,shape=RoundedCornerShape(24.dp),containerColor=MaterialTheme.colorScheme.surface,
   title={Text(tx("نوع پرداخت","Payment type"),fontWeight=FontWeight.Bold,fontSize=19.sp)},
   text={LazyColumn(Modifier.heightIn(max=360.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
-   items(listOf("قسط","وام","اجاره","قبض","خرید","آموزش","درمان","حمل‌ونقل","سرگرمی","عمومی","دلخواه")){category->SelectionOption(lx(category),if(category=="دلخواه")tx("نام دسته را خودت انتخاب کن","Create your own category")else null,categoryIcon(category),selected==category,{choose(category)})}
+   items(builtInCategories+CUSTOM_CATEGORY){category->SelectionOption(lx(category),if(category==CUSTOM_CATEGORY)tx("نام دسته را خودت انتخاب کن","Create your own category")else null,categoryIcon(category),selected==category,{choose(category)})}
   }},confirmButton={TextButton(dismiss){Text(tx("بستن","Close"))}})
 }
 

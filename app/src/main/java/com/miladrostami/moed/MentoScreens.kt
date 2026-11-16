@@ -62,17 +62,101 @@ internal fun date(ms:Long):String{val p=PersianDate.from(ms);return "${fa(p.day)
 @Composable private fun PaymentCard(r:PaymentWithInstallments,i:Installment,open:()->Unit,pay:()->Unit){val done=i.paidAt!=null;Card(onClick=open,shape=RoundedCornerShape(18.dp),colors=CardDefaults.cardColors(MaterialTheme.colorScheme.surface),border=BorderStroke(1.dp,if(done)MT.copy(.45f) else MaterialTheme.colorScheme.outline),modifier=Modifier.animateContentSize()){Row(Modifier.fillMaxWidth().padding(12.dp),verticalAlignment=Alignment.CenterVertically){Surface(color=if(done)MT.copy(.12f) else MS,shape=RoundedCornerShape(14.dp),modifier=Modifier.size(44.dp)){Box(contentAlignment=Alignment.Center){Icon(icon(r.item.iconKey),null,tint=if(done)MT else MP)}};Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text(r.item.title,fontWeight=FontWeight.Bold);Text(if(done)tx("انجام شد · ${date(i.dueAt)}","Paid · ${date(i.dueAt)}") else "${lx(r.item.category)} · ${date(i.dueAt)}",fontSize=11.sp,color=if(done)MT else if(i.dueAt<System.currentTimeMillis())MR else MM);Text("${money(i.amount)} ${tx("تومان","toman")}",fontSize=12.sp,fontWeight=FontWeight.SemiBold)};Surface(onClick=pay,shape=CircleShape,color=if(done)MT else MaterialTheme.colorScheme.surface,border=BorderStroke(1.5.dp,if(done)MT else MP),modifier=Modifier.size(36.dp)){Box(contentAlignment=Alignment.Center){Icon(Icons.Outlined.Done,if(done)tx("انجام شده","Paid") else tx("ثبت پرداخت","Mark as paid"),tint=if(done)MaterialTheme.colorScheme.surface else MP,modifier=Modifier.size(19.dp))}}}}}
 
 private data class IC(val key:String,val label:String,val image:ImageVector,val group:String)
-private val icons=listOf(IC("card","کارت",Icons.Outlined.CreditCard,"مالی"),IC("bank","بانک",Icons.Outlined.AccountBalance,"مالی"),IC("wallet","کیف پول",Icons.Outlined.AccountBalanceWallet,"مالی"),IC("receipt","رسید",Icons.Outlined.ReceiptLong,"مالی"),IC("savings","پس‌انداز",Icons.Outlined.Savings,"مالی"),IC("home","خانه",Icons.Outlined.Home,"خانه"),IC("chair","مبلمان",Icons.Outlined.Chair,"خانه"),IC("kitchen","آشپزخانه",Icons.Outlined.Kitchen,"خانه"),IC("tv","لوازم برقی",Icons.Outlined.Tv,"خانه"),IC("bolt","انرژی",Icons.Outlined.Bolt,"خانه"),IC("car","خودرو",Icons.Outlined.DirectionsCar,"خودرو"),IC("fuel","سوخت",Icons.Outlined.LocalGasStation,"خودرو"),IC("repair","تعمیرات",Icons.Outlined.Handyman,"خودرو"),IC("bike","موتور",Icons.Outlined.TwoWheeler,"خودرو"),IC("cart","خرید",Icons.Outlined.ShoppingCart,"خرید"),IC("food","خوراک",Icons.Outlined.Restaurant,"خرید"),IC("fastfood","فست‌فود",Icons.Outlined.Fastfood,"خرید"),IC("clothes","پوشاک",Icons.Outlined.Checkroom,"خرید"),IC("book","آموزش",Icons.Outlined.MenuBook,"شخصی"),IC("health","درمان",Icons.Outlined.HealthAndSafety,"شخصی"),IC("fitness","ورزش",Icons.Outlined.FitnessCenter,"شخصی"),IC("phone","موبایل",Icons.Outlined.PhoneAndroid,"شخصی"),IC("laptop","رایانه",Icons.Outlined.Laptop,"شخصی"),IC("flight","سفر",Icons.Outlined.Flight,"تفریح"),IC("sport","سرگرمی",Icons.Outlined.SportsSoccer,"تفریح"),IC("gift","هدیه",Icons.Outlined.CardGiftcard,"سایر"),IC("pets","حیوانات",Icons.Outlined.Pets,"سایر"),IC("star","ویژه",Icons.Outlined.StarBorder,"سایر"),IC("more","سایر",Icons.Outlined.MoreHoriz,"سایر"))
+private val icons=listOf(
+ // مالی
+ IC("card","کارت",Icons.Outlined.CreditCard,"مالی"),
+ IC("bank","بانک",Icons.Outlined.AccountBalance,"مالی"),
+ IC("wallet","کیف پول",Icons.Outlined.AccountBalanceWallet,"مالی"),
+ IC("receipt","رسید",Icons.Outlined.ReceiptLong,"مالی"),
+ IC("savings","پس‌انداز",Icons.Outlined.Savings,"مالی"),
+ IC("insurance","بیمه",Icons.Outlined.Security,"مالی"),
+ IC("subscription","اشتراک",Icons.Outlined.Subscriptions,"مالی"),
+ IC("invest","سرمایه‌گذاری",Icons.Outlined.TrendingUp,"مالی"),
+ IC("fine","جریمه",Icons.Outlined.Gavel,"مالی"),
+ // خانه
+ IC("home","خانه",Icons.Outlined.Home,"خانه"),
+ IC("building","ساختمان",Icons.Outlined.Apartment,"خانه"),
+ IC("chair","مبلمان",Icons.Outlined.Chair,"خانه"),
+ IC("kitchen","آشپزخانه",Icons.Outlined.Kitchen,"خانه"),
+ IC("tv","لوازم برقی",Icons.Outlined.Tv,"خانه"),
+ IC("bolt","انرژی",Icons.Outlined.Bolt,"خانه"),
+ IC("light","برق",Icons.Outlined.Lightbulb,"خانه"),
+ IC("water","آب",Icons.Outlined.WaterDrop,"خانه"),
+ IC("gas","گاز",Icons.Outlined.LocalFireDepartment,"خانه"),
+ IC("internet","اینترنت",Icons.Outlined.Wifi,"خانه"),
+ IC("clean","نظافت",Icons.Outlined.CleaningServices,"خانه"),
+ // خودرو
+ IC("car","خودرو",Icons.Outlined.DirectionsCar,"خودرو"),
+ IC("fuel","سوخت",Icons.Outlined.LocalGasStation,"خودرو"),
+ IC("repair","تعمیرات",Icons.Outlined.Handyman,"خودرو"),
+ IC("bike","موتور",Icons.Outlined.TwoWheeler,"خودرو"),
+ IC("bicycle","دوچرخه",Icons.Outlined.DirectionsBike,"خودرو"),
+ IC("bus","اتوبوس",Icons.Outlined.DirectionsBus,"خودرو"),
+ IC("taxi","تاکسی",Icons.Outlined.LocalTaxi,"خودرو"),
+ IC("train","قطار",Icons.Outlined.Train,"خودرو"),
+ IC("parking","پارکینگ",Icons.Outlined.LocalParking,"خودرو"),
+ // خرید
+ IC("cart","خرید",Icons.Outlined.ShoppingCart,"خرید"),
+ IC("grocery","خواربار",Icons.Outlined.LocalGroceryStore,"خرید"),
+ IC("store","فروشگاه",Icons.Outlined.Store,"خرید"),
+ IC("food","خوراک",Icons.Outlined.Restaurant,"خرید"),
+ IC("fastfood","فست‌فود",Icons.Outlined.Fastfood,"خرید"),
+ IC("cafe","کافه",Icons.Outlined.LocalCafe,"خرید"),
+ IC("clothes","پوشاک",Icons.Outlined.Checkroom,"خرید"),
+ // شخصی
+ IC("book","آموزش",Icons.Outlined.MenuBook,"شخصی"),
+ IC("school","مدرسه",Icons.Outlined.School,"شخصی"),
+ IC("work","کار",Icons.Outlined.Work,"شخصی"),
+ IC("health","درمان",Icons.Outlined.HealthAndSafety,"شخصی"),
+ IC("doctor","پزشک",Icons.Outlined.MedicalServices,"شخصی"),
+ IC("pharmacy","دارو",Icons.Outlined.LocalPharmacy,"شخصی"),
+ IC("hospital","بیمارستان",Icons.Outlined.LocalHospital,"شخصی"),
+ IC("fitness","ورزش",Icons.Outlined.FitnessCenter,"شخصی"),
+ IC("phone","موبایل",Icons.Outlined.PhoneAndroid,"شخصی"),
+ IC("laptop","رایانه",Icons.Outlined.Laptop,"شخصی"),
+ // آرایشی بهداشتی
+ IC("beauty","آرایشی",Icons.Outlined.Face,"آرایشی بهداشتی"),
+ IC("makeup","لوازم آرایش",Icons.Outlined.Brush,"آرایشی بهداشتی"),
+ IC("spa","اسپا",Icons.Outlined.Spa,"آرایشی بهداشتی"),
+ IC("haircut","آرایشگاه",Icons.Outlined.ContentCut,"آرایشی بهداشتی"),
+ IC("shower","حمام",Icons.Outlined.Shower,"آرایشی بهداشتی"),
+ IC("bath","وان",Icons.Outlined.Bathtub,"آرایشی بهداشتی"),
+ IC("hygiene","بهداشت",Icons.Outlined.Sanitizer,"آرایشی بهداشتی"),
+ // افراد
+ IC("man","مرد",Icons.Outlined.Man,"افراد"),
+ IC("woman","زن",Icons.Outlined.Woman,"افراد"),
+ IC("child","بچه",Icons.Outlined.Boy,"افراد"),
+ IC("baby","نوزاد",Icons.Outlined.ChildCare,"افراد"),
+ IC("family","خانواده",Icons.Outlined.FamilyRestroom,"افراد"),
+ IC("person","فرد",Icons.Outlined.Person,"افراد"),
+ IC("people","گروه",Icons.Outlined.Groups,"افراد"),
+ // تفریح
+ IC("flight","سفر",Icons.Outlined.Flight,"تفریح"),
+ IC("hotel","اقامت",Icons.Outlined.Hotel,"تفریح"),
+ IC("sport","سرگرمی",Icons.Outlined.SportsSoccer,"تفریح"),
+ IC("game","بازی",Icons.Outlined.SportsEsports,"تفریح"),
+ IC("movie","فیلم",Icons.Outlined.Movie,"تفریح"),
+ IC("music","موسیقی",Icons.Outlined.MusicNote,"تفریح"),
+ IC("party","مهمانی",Icons.Outlined.Celebration,"تفریح"),
+ IC("camera","عکاسی",Icons.Outlined.CameraAlt,"تفریح"),
+ IC("pool","استخر",Icons.Outlined.Pool,"تفریح"),
+ IC("hiking","طبیعت‌گردی",Icons.Outlined.Hiking,"تفریح"),
+ // سایر
+ IC("gift","هدیه",Icons.Outlined.CardGiftcard,"سایر"),
+ IC("pets","حیوانات",Icons.Outlined.Pets,"سایر"),
+ IC("tools","ابزار",Icons.Outlined.Build,"سایر"),
+ IC("star","ویژه",Icons.Outlined.StarBorder,"سایر"),
+ IC("more","سایر",Icons.Outlined.MoreHoriz,"سایر")
+)
 internal fun icon(k:String)=icons.firstOrNull{it.key==k}?.image?:Icons.Outlined.CreditCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MentoAddSheet(initial:PaymentWithInstallments?,dismiss:()->Unit,save:(String,String,String,Long,PersianDate,String,Int,String,Set<Int>,Int,Int)->Unit){
  val locked=initial?.installments?.any{it.paidAt!=null}==true
- val builtIn=listOf("قسط","وام","اجاره","قبض","خرید","آموزش","درمان","حمل‌ونقل","سرگرمی","عمومی")
  val startCategory=initial?.item?.category.orEmpty()
  var title by remember{mutableStateOf(initial?.item?.title?:"")}
- var cat by remember{mutableStateOf(when{startCategory.isEmpty()->"قسط";startCategory in builtIn->startCategory;else->"دلخواه"})}
+ var cat by remember{mutableStateOf(when{startCategory.isEmpty()->"قسط";startCategory in builtInCategories->startCategory;else->"دلخواه"})}
  var customCat by remember{mutableStateOf(if(cat=="دلخواه")startCategory else "")}
  var ico by remember{mutableStateOf(initial?.item?.iconKey?:"card")}
  var raw by remember{mutableStateOf(initial?.item?.amount?.toString()?:"1000000")}
