@@ -24,9 +24,11 @@ fun englishAmount(value:Long):String {
 }
 private val translations=mapOf(
  "قسط" to "Installment","وام" to "Loan","اجاره" to "Rent","قبض" to "Bill","خرید" to "Shopping","آموزش" to "Education","درمان" to "Health","حمل‌ونقل" to "Transport","سرگرمی" to "Entertainment","عمومی" to "General","دلخواه" to "Custom",
- "مالی" to "Finance","خانه" to "Home","خودرو" to "Vehicle","شخصی" to "Personal","تفریح" to "Leisure","سایر" to "Other",
- "کارت" to "Card","بانک" to "Bank","کیف پول" to "Wallet","رسید" to "Receipt","پس‌انداز" to "Savings","مبلمان" to "Furniture","آشپزخانه" to "Kitchen","لوازم برقی" to "Appliances","انرژی" to "Utilities","سوخت" to "Fuel","تعمیرات" to "Repairs","موتور" to "Motorbike","خوراک" to "Food","فست‌فود" to "Fast food","پوشاک" to "Clothing","ورزش" to "Fitness","موبایل" to "Phone","رایانه" to "Computer","سفر" to "Travel","هدیه" to "Gift","حیوانات" to "Pets","ویژه" to "Special"
-,
+ "آرایشی بهداشتی" to "Beauty & Health","بیمه" to "Insurance","اشتراک" to "Subscription",
+ "مالی" to "Finance","خانه" to "Home","خودرو" to "Vehicle","شخصی" to "Personal","تفریح" to "Leisure","سایر" to "Other","افراد" to "People",
+ "کارت" to "Card","بانک" to "Bank","کیف پول" to "Wallet","رسید" to "Receipt","پس‌انداز" to "Savings","مبلمان" to "Furniture","آشپزخانه" to "Kitchen","لوازم برقی" to "Appliances","انرژی" to "Utilities","سوخت" to "Fuel","تعمیرات" to "Repairs","موتور" to "Motorbike","خوراک" to "Food","فست‌فود" to "Fast food","پوشاک" to "Clothing","ورزش" to "Fitness","موبایل" to "Phone","رایانه" to "Computer","سفر" to "Travel","هدیه" to "Gift","حیوانات" to "Pets","ویژه" to "Special",
+ "آرایشی" to "Beauty","زیبایی" to "Cosmetics","مرد" to "Man","زن" to "Woman","بچه" to "Child","خانواده" to "Family","فیلم" to "Movie","موسیقی" to "Music",
+ "هر ۳ ماه" to "Every 3 months","هر ۶ ماه" to "Every 6 months","سالانه" to "Yearly",
 "حساب خودت را بساز؛ اطلاعات مالی همچنان خصوصی روی همین گوشی می‌ماند." to "Create your account. Your financial data stays private on this phone.",
 "ورود گوگل تنظیم نشده" to "Google sign-in is not configured",
 "ورود انجام نشد" to "Sign-in failed",
