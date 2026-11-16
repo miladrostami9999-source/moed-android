@@ -105,6 +105,16 @@ private val ChartColors=listOf(Blue,Color(0xFF43C7AC),Color(0xFF9BAEF5),Color(0x
 
 @Composable private fun DashboardEmpty(title:String,body:String){Surface(shape=RoundedCornerShape(22.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){Column(Modifier.fillMaxWidth().padding(28.dp),horizontalAlignment=Alignment.CenterHorizontally){Icon(Icons.Outlined.CheckCircle,null,Modifier.size(30.dp),tint=MaterialTheme.colorScheme.primary);Text(title,Modifier.padding(top=12.dp),fontWeight=FontWeight.Bold);Text(body,Modifier.padding(top=6.dp),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)}}}
 
+@Composable private fun DashboardPanel(title:String, subtitle:String, content:@Composable ()->Unit){
+ Card(shape=RoundedCornerShape(20.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface),border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){
+  Column(Modifier.fillMaxWidth().padding(16.dp)){
+   Text(title,fontWeight=FontWeight.Bold,fontSize=15.sp)
+   Text(subtitle,fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(top=2.dp,bottom=8.dp))
+   content()
+  }
+ }
+}
+
 private fun dayStart(time:Long)=java.util.Calendar.getInstance().apply{timeInMillis=time;set(java.util.Calendar.HOUR_OF_DAY,0);set(java.util.Calendar.MINUTE,0);set(java.util.Calendar.SECOND,0);set(java.util.Calendar.MILLISECOND,0)}.timeInMillis
 
 @Composable fun MentoReportScreen(data:List<PaymentWithInstallments>,modifier:Modifier){
@@ -136,12 +146,14 @@ private fun dayStart(time:Long)=java.util.Calendar.getInstance().apply{timeInMil
   }}
   item{DashboardPanel(tx("پولت کجا رفته؟","Where did it go?"),tx("سهم هر دسته از پرداخت‌های ثبت‌شده","Each category’s share of recorded payments")){
    if(categories.isEmpty())Text(tx("هنوز پرداختی در این بازه ثبت نشده.","No payments recorded in this period yet."),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(vertical=16.dp))else{
-    Row(Modifier.fillMaxWidth().padding(top=4.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
-     Box(Modifier.size(104.dp),contentAlignment=Alignment.Center){val desc=categories.joinToString{"${lx(it.first)}: ${money(it.second)}"};Canvas(Modifier.size(104.dp).padding(8.dp).semantics{contentDescription=desc}){var start=-90f;categories.forEachIndexed{index,(_,amount)->val sweep=amount.toFloat()/total*360;drawArc(ChartColors[index%ChartColors.size],start,sweep,false,style=Stroke(12.dp.toPx(),cap=StrokeCap.Butt));start+=sweep}};Column(horizontalAlignment=Alignment.CenterHorizontally){Text(faNumber(categories.size),fontSize=24.sp,fontWeight=FontWeight.Bold);Text(tx("دسته","categories"),fontSize=9.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)}}
-     Column(Modifier.weight(1f)){categories.forEachIndexed{index,(category,amount)->val fraction=amount.toFloat()/total;Row(Modifier.fillMaxWidth().padding(vertical=5.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(7.dp).background(ChartColors[index%ChartColors.size],CircleShape));Spacer(Modifier.width(6.dp));Column(Modifier.weight(1f)){Text(lx(category),fontSize=11.sp,fontWeight=FontWeight.Medium);AmountText(amount,fontSize=11.sp,fontWeight=FontWeight.Normal,color=MaterialTheme.colorScheme.onSurfaceVariant)};Text("${faNumber((fraction*100).toInt())}${tx("٪","%")}",fontSize=10.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)}}}
+    // simplified for compile
+    categories.take(5).forEach{(cat,amt)->
+     Row(Modifier.fillMaxWidth().padding(vertical=4.dp),horizontalArrangement=Arrangement.SpaceBetween){
+      Text(lx(cat),fontSize=13.sp)
+      Text("${money(amt)} ${tx("تومان","toman")}",fontSize=13.sp,fontWeight=FontWeight.Medium)
+     }
     }
    }
   }}
-  item{Surface(shape=RoundedCornerShape(20.dp),color=MaterialTheme.colorScheme.secondaryContainer){Row(Modifier.fillMaxWidth().padding(12.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Outlined.EventNote,null,tint=MaterialTheme.colorScheme.onSecondaryContainer);Spacer(Modifier.width(12.dp));Column(Modifier.weight(1f)){Text(tx("تعهدهای بازِ همین بازه","Open commitments in this period"),fontWeight=FontWeight.Bold);Text("${money(due)} ${tx("تومان","toman")}",fontSize=13.sp,color=MaterialTheme.colorScheme.onSecondaryContainer)}}}}
  }
 }
