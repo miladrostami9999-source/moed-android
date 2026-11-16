@@ -36,15 +36,18 @@ private val ChartColors=listOf(Blue,Color(0xFF43C7AC),Color(0xFF9BAEF5),Color(0x
 
 @Composable fun MentoHomeScreen(data:List<PaymentWithInstallments>,open:(PaymentWithInstallments)->Unit,toggle:(Installment)->Unit,modifier:Modifier){
  val now=System.currentTimeMillis();val current=PersianDate.from(now)
- val month=data.flatMap{r->r.installments.filter{val p=PersianDate.from(it.dueAt);p.year==current.year&&p.month==current.month}.map{r to it}}
+ var selectedYear by remember { mutableIntStateOf(current.year) }
+ var selectedMonth by remember { mutableIntStateOf(current.month) }
+ var monthPickerOpen by remember { mutableStateOf(false) }
+ val month=data.flatMap{r->r.installments.filter{val p=PersianDate.from(it.dueAt);p.year==selectedYear&&p.month==selectedMonth}.map{r to it}}
  val pending=month.filter{it.second.paidAt==null}.sortedBy{it.second.dueAt}
  val total=month.sumOf{it.second.amount};val paid=month.filter{it.second.paidAt!=null}.sumOf{it.second.amount}
  val overdue=pending.count{dayStart(it.second.dueAt)<dayStart(now)}
- var filter by remember{mutableStateOf("all")};var query by remember{mutableStateOf("")};var searchOpen by remember{mutableStateOf(false)}
+ var filter by remember{mutableStateOf("pending")};var query by remember{mutableStateOf("")};var searchOpen by remember{mutableStateOf(false)}
  val shown=month.filter{(r,i)->(r.item.title.contains(query,true)||lx(r.item.category).contains(query,true))&&when(filter){"pending"->i.paidAt==null;"late"->i.paidAt==null&&dayStart(i.dueAt)<dayStart(now);"paid"->i.paidAt!=null;else->true}}.sortedWith(compareBy<Pair<PaymentWithInstallments,Installment>>{it.second.paidAt!=null}.thenBy{it.second.dueAt})
  val completion by animateFloatAsState(if(total==0L)0f else paid.toFloat()/total,label="monthly-progress")
  LazyColumn(modifier.fillMaxSize().padding(horizontal=16.dp),verticalArrangement=Arrangement.spacedBy(8.dp),contentPadding=PaddingValues(top=6.dp,bottom=60.dp)){
-  item{Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(tx("نمای ماه شما","Your month at a glance"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant);Text("${persianMonthName(current.month)} ${faNumber(current.year)}",fontSize=22.sp,fontWeight=FontWeight.ExtraBold)};Surface(color=MaterialTheme.colorScheme.surface,shape=RoundedCornerShape(14.dp),border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){Row(Modifier.padding(10.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Outlined.Today,null,Modifier.size(16.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(6.dp));Text(tx("امروز ${faNumber(current.day)}","Today ${faNumber(current.day)}"),fontSize=12.sp,fontWeight=FontWeight.Medium)}}}}
+  item{Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(tx("نمای ماه شما","Your month at a glance"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant);Surface(onClick={monthPickerOpen=true},shape=RoundedCornerShape(10.dp)){Text("${persianMonthName(selectedMonth)} ${faNumber(selectedYear)}",fontSize=22.sp,fontWeight=FontWeight.ExtraBold,modifier=Modifier.padding(vertical=2.dp))}};Surface(color=MaterialTheme.colorScheme.surface,shape=RoundedCornerShape(14.dp),border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){Row(Modifier.padding(10.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Outlined.Today,null,Modifier.size(16.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(6.dp));Text(tx("امروز ${faNumber(current.day)}","Today ${faNumber(current.day)}"),fontSize=12.sp,fontWeight=FontWeight.Medium)}}}}
   item{Card(shape=RoundedCornerShape(20.dp),colors=CardDefaults.cardColors(containerColor=NightBlue,contentColor=Color.White)){
    Box(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(NightBlue,Color(0xFF193B5A))))){Canvas(Modifier.matchParentSize()){drawCircle(Mint.copy(.06f),size.width*.48f,Offset(size.width,size.height*.1f));drawCircle(Blue.copy(.08f),size.width*.36f,Offset(0f,size.height))};Column(Modifier.padding(16.dp)){
     Row(verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(6.dp).background(Mint,CircleShape));Spacer(Modifier.width(7.dp));Text(tx("تعهدهای همین ماه","DUE THIS MONTH"),fontSize=11.sp,color=Color(0xFFD2DEEC),letterSpacing=.6.sp)}
@@ -61,12 +64,29 @@ private val ChartColors=listOf(Blue,Color(0xFF43C7AC),Color(0xFF9BAEF5),Color(0x
   if(shown.isEmpty())item{DashboardEmpty(if(month.isEmpty())tx("یک شروع مرتب","A fresh start")else tx("اینجا همه‌چیز مرتبه","All clear here"),if(month.isEmpty())tx("با دکمهٔ پرداخت جدید، اولین موعدت را اضافه کن.","Use New payment to add your first due date.")else tx("پرداختی مطابق این فیلتر پیدا نشد.","No payments match this filter."))}
   items(shown,key={it.second.id}){(r,i)->DashboardPayment(r,i,{open(r)},{toggle(i)})}
  }
+ if(monthPickerOpen){
+  AlertDialog(
+   onDismissRequest={monthPickerOpen=false},
+   title={Text(tx("انتخاب ماه","Select month"),fontWeight=FontWeight.Bold)},
+   text={
+    Column(verticalArrangement=Arrangement.spacedBy(8.dp)){
+     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
+      IconButton({if(selectedMonth==1){selectedMonth=12;selectedYear--}else selectedMonth--}){Icon(Icons.Outlined.ChevronRight,null)}
+      Text("${persianMonthName(selectedMonth)} ${faNumber(selectedYear)}",fontWeight=FontWeight.Bold,fontSize=16.sp)
+      IconButton({if(selectedMonth==12){selectedMonth=1;selectedYear++}else selectedMonth++}){Icon(Icons.Outlined.ChevronLeft,null)}
+     }
+     Text(tx("برای دیدن ماه‌های گذشته یا آینده از فلش‌ها استفاده کنید","Use the arrows to view past or future months"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+   },
+   confirmButton={TextButton({monthPickerOpen=false}){Text(tx("تأیید","Confirm"))}},
+   dismissButton={TextButton({selectedYear=current.year;selectedMonth=current.month;monthPickerOpen=false}){Text(tx("ماه جاری","Current month"))}}
+  )
+ }
 }
 
 @Composable private fun QuickMetric(title:String,value:String,caption:String,image:androidx.compose.ui.graphics.vector.ImageVector,modifier:Modifier,attention:Boolean=false){
  Surface(modifier,shape=RoundedCornerShape(20.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){
   Column(Modifier.padding(10.dp)){Row(verticalAlignment=Alignment.CenterVertically){Icon(image,null,Modifier.size(16.dp),tint=if(attention)MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary);Spacer(Modifier.width(6.dp));Text(title,fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)};Text(value,Modifier.padding(top=4.dp),fontSize=18.sp,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis,style=androidx.compose.ui.text.TextStyle(textDirection=androidx.compose.ui.text.style.TextDirection.Ltr));Text(caption,fontSize=9.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)}
-
  }
 }
 
@@ -120,11 +140,8 @@ private fun dayStart(time:Long)=java.util.Calendar.getInstance().apply{timeInMil
      Box(Modifier.size(104.dp),contentAlignment=Alignment.Center){val desc=categories.joinToString{"${lx(it.first)}: ${money(it.second)}"};Canvas(Modifier.size(104.dp).padding(8.dp).semantics{contentDescription=desc}){var start=-90f;categories.forEachIndexed{index,(_,amount)->val sweep=amount.toFloat()/total*360;drawArc(ChartColors[index%ChartColors.size],start,sweep,false,style=Stroke(12.dp.toPx(),cap=StrokeCap.Butt));start+=sweep}};Column(horizontalAlignment=Alignment.CenterHorizontally){Text(faNumber(categories.size),fontSize=24.sp,fontWeight=FontWeight.Bold);Text(tx("دسته","categories"),fontSize=9.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)}}
      Column(Modifier.weight(1f)){categories.forEachIndexed{index,(category,amount)->val fraction=amount.toFloat()/total;Row(Modifier.fillMaxWidth().padding(vertical=5.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(7.dp).background(ChartColors[index%ChartColors.size],CircleShape));Spacer(Modifier.width(6.dp));Column(Modifier.weight(1f)){Text(lx(category),fontSize=11.sp,fontWeight=FontWeight.Medium);AmountText(amount,fontSize=11.sp,fontWeight=FontWeight.Normal,color=MaterialTheme.colorScheme.onSurfaceVariant)};Text("${faNumber((fraction*100).toInt())}${tx("٪","%")}",fontSize=10.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)}}}
     }
-
    }
   }}
-  item{Surface(shape=RoundedCornerShape(20.dp),color=MaterialTheme.colorScheme.secondaryContainer){Row(Modifier.fillMaxWidth().padding(12.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Outlined.EventNote,null,tint=MaterialTheme.colorScheme.onSecondaryContainer);Spacer(Modifier.width(12.dp));Column(Modifier.weight(1f)){Text(tx("تعهدهای بازِ همین بازه","Outstanding in this period"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSecondaryContainer);Text("${money(due)} ${tx("تومان","toman")}",fontWeight=FontWeight.Bold,fontSize=17.sp,color=MaterialTheme.colorScheme.onSecondaryContainer,modifier=Modifier.padding(top=4.dp))}}}}
+  item{Surface(shape=RoundedCornerShape(20.dp),color=MaterialTheme.colorScheme.secondaryContainer){Row(Modifier.fillMaxWidth().padding(12.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Outlined.EventNote,null,tint=MaterialTheme.colorScheme.onSecondaryContainer);Spacer(Modifier.width(12.dp));Column(Modifier.weight(1f)){Text(tx("تعهدهای بازِ همین بازه","Open commitments in this period"),fontWeight=FontWeight.Bold);Text("${money(due)} ${tx("تومان","toman")}",fontSize=13.sp,color=MaterialTheme.colorScheme.onSecondaryContainer)}}}}
  }
 }
-
-@Composable private fun DashboardPanel(title:String,subtitle:String,content:@Composable ColumnScope.()->Unit){Surface(shape=RoundedCornerShape(18.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){Column(Modifier.fillMaxWidth().padding(14.dp)){Text(title,fontWeight=FontWeight.Bold,fontSize=15.sp);Text(subtitle,fontSize=10.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(top=2.dp,bottom=6.dp));content()}}}
