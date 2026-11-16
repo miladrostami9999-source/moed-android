@@ -47,7 +47,7 @@ private val ChartColors=listOf(Blue,Color(0xFF43C7AC),Color(0xFF9BAEF5),Color(0x
  val shown=month.filter{(r,i)->(r.item.title.contains(query,true)||lx(r.item.category).contains(query,true))&&when(filter){"pending"->i.paidAt==null;"late"->i.paidAt==null&&dayStart(i.dueAt)<dayStart(now);"paid"->i.paidAt!=null;else->true}}.sortedWith(compareBy<Pair<PaymentWithInstallments,Installment>>{it.second.paidAt!=null}.thenBy{it.second.dueAt})
  val completion by animateFloatAsState(if(total==0L)0f else paid.toFloat()/total,label="monthly-progress")
  LazyColumn(modifier.fillMaxSize().padding(horizontal=16.dp),verticalArrangement=Arrangement.spacedBy(8.dp),contentPadding=PaddingValues(top=6.dp,bottom=60.dp)){
-  item{Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(tx("نمای ماه شما","Your month at a glance"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant);Surface(onClick={monthPickerOpen=true},shape=RoundedCornerShape(10.dp)){Text("${persianMonthName(selectedMonth)} ${faNumber(selectedYear)}",fontSize=22.sp,fontWeight=FontWeight.ExtraBold,modifier=Modifier.padding(vertical=2.dp))}};Surface(color=MaterialTheme.colorScheme.surface,shape=RoundedCornerShape(14.dp),border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){Row(Modifier.padding(10.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Outlined.Today,null,Modifier.size(16.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(6.dp));Text(tx("امروز ${faNumber(current.day)}","Today ${faNumber(current.day)}"),fontSize=12.sp,fontWeight=FontWeight.Medium)}}}}
+  item{Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(tx("نمای ماه شما","Your month at a glance"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant);Surface(onClick={monthPickerOpen=true},shape=RoundedCornerShape(10.dp),color=Color.Transparent){Row(verticalAlignment=Alignment.CenterVertically,modifier=Modifier.padding(vertical=2.dp)){Text("${persianMonthName(selectedMonth)} ${faNumber(selectedYear)}",fontSize=22.sp,fontWeight=FontWeight.ExtraBold);Icon(Icons.Outlined.ExpandMore,tx("انتخاب ماه","Select month"),tint=MaterialTheme.colorScheme.primary)}}};Surface(color=MaterialTheme.colorScheme.surface,shape=RoundedCornerShape(14.dp),border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){Row(Modifier.padding(10.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Outlined.Today,null,Modifier.size(16.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(6.dp));Text(tx("امروز ${faNumber(current.day)}","Today ${faNumber(current.day)}"),fontSize=12.sp,fontWeight=FontWeight.Medium)}}}}
   item{Card(shape=RoundedCornerShape(20.dp),colors=CardDefaults.cardColors(containerColor=NightBlue,contentColor=Color.White)){
    Box(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(NightBlue,Color(0xFF193B5A))))){Canvas(Modifier.matchParentSize()){drawCircle(Mint.copy(.06f),size.width*.48f,Offset(size.width,size.height*.1f));drawCircle(Blue.copy(.08f),size.width*.36f,Offset(0f,size.height))};Column(Modifier.padding(16.dp)){
     Row(verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(6.dp).background(Mint,CircleShape));Spacer(Modifier.width(7.dp));Text(tx("تعهدهای همین ماه","DUE THIS MONTH"),fontSize=11.sp,color=Color(0xFFD2DEEC),letterSpacing=.6.sp)}
@@ -65,23 +65,54 @@ private val ChartColors=listOf(Blue,Color(0xFF43C7AC),Color(0xFF9BAEF5),Color(0x
   items(shown,key={it.second.id}){(r,i)->DashboardPayment(r,i,{open(r)},{toggle(i)})}
  }
  if(monthPickerOpen){
-  AlertDialog(
-   onDismissRequest={monthPickerOpen=false},
-   title={Text(tx("انتخاب ماه","Select month"),fontWeight=FontWeight.Bold)},
-   text={
-    Column(verticalArrangement=Arrangement.spacedBy(8.dp)){
-     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
-      IconButton({if(selectedMonth==1){selectedMonth=12;selectedYear--}else selectedMonth--}){Icon(Icons.Outlined.ChevronRight,null)}
-      Text("${persianMonthName(selectedMonth)} ${faNumber(selectedYear)}",fontWeight=FontWeight.Bold,fontSize=16.sp)
-      IconButton({if(selectedMonth==12){selectedMonth=1;selectedYear++}else selectedMonth++}){Icon(Icons.Outlined.ChevronLeft,null)}
-     }
-     Text(tx("برای دیدن ماه‌های گذشته یا آینده از فلش‌ها استفاده کنید","Use the arrows to view past or future months"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-   },
-   confirmButton={TextButton({monthPickerOpen=false}){Text(tx("تأیید","Confirm"))}},
-   dismissButton={TextButton({selectedYear=current.year;selectedMonth=current.month;monthPickerOpen=false}){Text(tx("ماه جاری","Current month"))}}
+  MonthGridDialog(
+   year=selectedYear,month=selectedMonth,current=current,
+   monthsWithPayments=remember(data){data.flatMap{r->r.installments.map{PersianDate.from(it.dueAt)}}.map{it.year to it.month}.toSet()},
+   choose={y,m->selectedYear=y;selectedMonth=m;monthPickerOpen=false},
+   dismiss={monthPickerOpen=false}
   )
  }
+}
+
+@Composable private fun MonthGridDialog(year:Int,month:Int,current:PersianDate,monthsWithPayments:Set<Pair<Int,Int>>,choose:(Int,Int)->Unit,dismiss:()->Unit){
+ var shownYear by remember{mutableIntStateOf(year)}
+ AlertDialog(
+  onDismissRequest=dismiss,shape=RoundedCornerShape(24.dp),containerColor=MaterialTheme.colorScheme.surface,
+  title={Text(tx("انتخاب ماه","Select month"),fontWeight=FontWeight.Bold,fontSize=19.sp)},
+  text={
+   Column(verticalArrangement=Arrangement.spacedBy(8.dp)){
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
+     IconButton({shownYear--}){Icon(Icons.Outlined.ChevronRight,tx("سال قبل","Previous year"))}
+     Text(faNumber(shownYear),fontWeight=FontWeight.ExtraBold,fontSize=18.sp)
+     IconButton({shownYear++}){Icon(Icons.Outlined.ChevronLeft,tx("سال بعد","Next year"))}
+    }
+    (1..12).chunked(3).forEach{row->
+     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+      row.forEach{m->
+       val selected=shownYear==year&&m==month
+       val isCurrent=shownYear==current.year&&m==current.month
+       val hasPayments=(shownYear to m) in monthsWithPayments
+       Surface(
+        onClick={choose(shownYear,m)},
+        modifier=Modifier.weight(1f).heightIn(min=52.dp),
+        shape=RoundedCornerShape(14.dp),
+        color=if(selected)MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+        border=BorderStroke(if(isCurrent)1.5.dp else 1.dp,if(isCurrent)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
+       ){
+        Column(Modifier.padding(vertical=8.dp,horizontal=4.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){
+         Text(persianMonthName(m),fontSize=13.sp,fontWeight=if(selected||isCurrent)FontWeight.Bold else FontWeight.Normal,maxLines=1,overflow=TextOverflow.Ellipsis,color=if(selected)MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface)
+         Box(Modifier.padding(top=4.dp).size(6.dp).background(if(hasPayments)MaterialTheme.colorScheme.primary else Color.Transparent,CircleShape))
+        }
+       }
+      }
+     }
+    }
+    Text(tx("نقطه یعنی در آن ماه پرداخت ثبت شده است","A dot means that month has payments"),fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)
+   }
+  },
+  confirmButton={TextButton({choose(current.year,current.month)}){Text(tx("ماه جاری","Current month"))}},
+  dismissButton={TextButton(dismiss){Text(tx("بستن","Close"))}}
+ )
 }
 
 @Composable private fun QuickMetric(title:String,value:String,caption:String,image:androidx.compose.ui.graphics.vector.ImageVector,modifier:Modifier,attention:Boolean=false){
