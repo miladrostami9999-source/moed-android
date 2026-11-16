@@ -17,23 +17,73 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+internal val PREDEFINED_CATEGORIES = listOf(
+ "قسط", "وام", "اجاره", "قبض", "خرید", "آموزش", "درمان",
+ "حمل‌ونقل", "سرگرمی", "آرایشی بهداشتی", "بیمه", "اشتراک",
+ "عمومی", "دلخواه"
+)
+
 internal fun categoryIcon(category:String):ImageVector=when(category){
- "قسط"->Icons.Outlined.CreditCard;"وام"->Icons.Outlined.AccountBalance;"اجاره"->Icons.Outlined.Home;"قبض"->Icons.Outlined.ReceiptLong;"خرید"->Icons.Outlined.ShoppingCart;"آموزش"->Icons.Outlined.MenuBook;"درمان"->Icons.Outlined.HealthAndSafety;"حمل‌ونقل"->Icons.Outlined.DirectionsCar;"سرگرمی"->Icons.Outlined.SportsEsports;"عمومی"->Icons.Outlined.AccountBalanceWallet;else->Icons.Outlined.EditNote
+ "قسط"->Icons.Outlined.CreditCard
+ "وام"->Icons.Outlined.AccountBalance
+ "اجاره"->Icons.Outlined.Home
+ "قبض"->Icons.Outlined.ReceiptLong
+ "خرید"->Icons.Outlined.ShoppingCart
+ "آموزش"->Icons.Outlined.MenuBook
+ "درمان"->Icons.Outlined.HealthAndSafety
+ "حمل‌ونقل"->Icons.Outlined.DirectionsCar
+ "سرگرمی"->Icons.Outlined.SportsEsports
+ "آرایشی بهداشتی"->Icons.Outlined.Spa
+ "بیمه"->Icons.Outlined.Shield
+ "اشتراک"->Icons.Outlined.Subscriptions
+ "عمومی"->Icons.Outlined.AccountBalanceWallet
+ else->Icons.Outlined.EditNote
 }
-internal fun reminderTitle(mode:String)=when(mode){"alarm"->tx("آلارم دقیق","Exact alarm");"both"->tx("اعلان و آلارم","Notification and alarm");else->tx("اعلان","Notification")}
+
+internal fun reminderTitle(mode:String)=when(mode){
+ "alarm"->tx("آلارم دقیق","Exact alarm")
+ "both"->tx("اعلان و آلارم","Notification and alarm")
+ else->tx("اعلان","Notification")
+}
 
 @Composable internal fun SelectField(label:String,image:ImageVector,onClick:()->Unit,modifier:Modifier=Modifier){
  Surface(onClick=onClick,modifier=modifier.heightIn(min=48.dp),shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){
-  Row(Modifier.padding(horizontal=12.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically){Icon(image,null,Modifier.size(20.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(8.dp));Text(label,Modifier.weight(1f),fontSize=13.sp,fontWeight=FontWeight.Medium,maxLines=1,overflow=TextOverflow.Ellipsis);Icon(Icons.Outlined.ExpandMore,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant)}
+  Row(Modifier.padding(horizontal=12.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically){
+   Icon(image,null,Modifier.size(20.dp),tint=MaterialTheme.colorScheme.primary)
+   Spacer(Modifier.width(8.dp))
+   Text(label,Modifier.weight(1f),fontSize=13.sp,fontWeight=FontWeight.Medium,maxLines=1,overflow=TextOverflow.Ellipsis)
+   Icon(Icons.Outlined.ExpandMore,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant)
+  }
  }
 }
 
-@Composable internal fun CategoryDialog(selected:String,choose:(String)->Unit,dismiss:()->Unit){
- AlertDialog(onDismissRequest=dismiss,shape=RoundedCornerShape(24.dp),containerColor=MaterialTheme.colorScheme.surface,
+@Composable internal fun CategoryDialog(
+ selected:String,
+ customCategories:List<String> = emptyList(),
+ choose:(String)->Unit,
+ dismiss:()->Unit
+){
+ val all = (PREDEFINED_CATEGORIES + customCategories.filter{it !in PREDEFINED_CATEGORIES}).distinct()
+ AlertDialog(
+  onDismissRequest=dismiss,
+  shape=RoundedCornerShape(24.dp),
+  containerColor=MaterialTheme.colorScheme.surface,
   title={Text(tx("نوع پرداخت","Payment type"),fontWeight=FontWeight.Bold,fontSize=19.sp)},
-  text={LazyColumn(Modifier.heightIn(max=360.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
-   items(listOf("قسط","وام","اجاره","قبض","خرید","آموزش","درمان","حمل‌ونقل","سرگرمی","عمومی","دلخواه")){category->SelectionOption(lx(category),if(category=="دلخواه")tx("نام دسته را خودت انتخاب کن","Create your own category")else null,categoryIcon(category),selected==category,{choose(category)})}
-  }},confirmButton={TextButton(dismiss){Text(tx("بستن","Close"))}})
+  text={
+   LazyColumn(Modifier.heightIn(max=380.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
+    items(all){category->
+     SelectionOption(
+      title = lx(category),
+      description = if(category=="دلخواه") tx("نام دسته را خودت انتخاب کن","Create your own category") else null,
+      image = categoryIcon(category),
+      selected = selected==category,
+      onClick = {choose(category)}
+     )
+    }
+   }
+  },
+  confirmButton={TextButton(dismiss){Text(tx("بستن","Close"))}}
+ )
 }
 
 @Composable internal fun ReminderDialog(selected:String,choose:(String)->Unit,dismiss:()->Unit){
@@ -47,6 +97,14 @@ internal fun reminderTitle(mode:String)=when(mode){"alarm"->tx("آلارم دق�
 
 @Composable private fun SelectionOption(title:String,description:String?,image:ImageVector,selected:Boolean,onClick:()->Unit){
  Surface(onClick=onClick,shape=RoundedCornerShape(12.dp),color=if(selected)MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,if(selected)MaterialTheme.colorScheme.primary.copy(.5f)else MaterialTheme.colorScheme.outlineVariant)){
-  Row(Modifier.fillMaxWidth().padding(10.dp),verticalAlignment=Alignment.CenterVertically){Icon(image,null,Modifier.size(20.dp),tint=if(selected)MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary);Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text(title,fontSize=13.sp,fontWeight=if(selected)FontWeight.Bold else FontWeight.Medium,color=if(selected)MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface);description?.let{Text(it,fontSize=10.sp,lineHeight=15.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)}};if(selected){Spacer(Modifier.width(6.dp));Icon(Icons.Outlined.CheckCircle,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.primary)}}
+  Row(Modifier.fillMaxWidth().padding(10.dp),verticalAlignment=Alignment.CenterVertically){
+   Icon(image,null,Modifier.size(20.dp),tint=if(selected)MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary)
+   Spacer(Modifier.width(10.dp))
+   Column(Modifier.weight(1f)){
+    Text(title,fontSize=13.sp,fontWeight=if(selected)FontWeight.Bold else FontWeight.Medium,color=if(selected)MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface)
+    description?.let{Text(it,fontSize=10.sp,lineHeight=15.sp,color=MaterialTheme.colorScheme.onSurfaceVariant)}
+   }
+   if(selected){Spacer(Modifier.width(6.dp));Icon(Icons.Outlined.CheckCircle,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.primary)}
+  }
  }
 }
