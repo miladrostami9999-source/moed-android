@@ -51,4 +51,33 @@ class FrequencyTest {
         assertEquals(listOf(0, 1, 3, 6, 12), repeatRules.map(::repeatStepMonths))
         assertEquals(listOf(1, 12, 4, 2, 3), repeatRules.map(::defaultInstallmentCount))
     }
+
+    @Test fun customDaysAddsExactDays() {
+        // Farvardin, Ordibehesht and Khordad have 31 days each.
+        assertEquals(
+            listOf(PersianDate(1405, 1, 15), PersianDate(1405, 2, 29), PersianDate(1405, 4, 12)),
+            dates(PersianDate(1405, 1, 15), customDaysRule(45), 3)
+        )
+        assertEquals(
+            listOf(PersianDate(1405, 1, 1), PersianDate(1405, 3, 9)),
+            dates(PersianDate(1405, 1, 1), customDaysRule(70), 2)
+        )
+    }
+
+    @Test fun customRuleIsParsedAndClamped() {
+        assertEquals("days:45", customDaysRule(45))
+        assertEquals(45, repeatStepDays("days:45"))
+        assertEquals(1, repeatStepDays(customDaysRule(0)))
+        assertEquals(MAX_CUSTOM_DAYS, repeatStepDays(customDaysRule(999_999)))
+        assertEquals(0, repeatStepDays("days:abc"))
+        assertEquals(0, repeatStepDays("monthly"))
+        assertEquals(true, isCustomRule("days:10"))
+        assertEquals(false, isCustomRule("yearly"))
+    }
+
+    @Test fun recurringCoversEveryRepeatingRule() {
+        assertEquals(listOf(false, true, true, true, true), repeatRules.map(::isRecurring))
+        assertEquals(true, isRecurring("days:30"))
+        assertEquals(6, defaultInstallmentCount("days:30"))
+    }
 }

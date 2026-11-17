@@ -182,7 +182,7 @@ fun MentoAddSheet(initial:PaymentWithInstallments?,usedCategories:List<Pair<Stri
  var tp by remember{mutableStateOf(false)}
  var fp by remember{mutableStateOf(false)}
  val amount=raw.toLongOrNull()?:0L
- val step=repeatStepMonths(repeat)
+ val recurring=isRecurring(repeat)
  ModalBottomSheet(onDismissRequest=dismiss,dragHandle={BottomSheetDefaults.DragHandle()}){
   LazyColumn(Modifier.fillMaxWidth().padding(horizontal=18.dp),verticalArrangement=Arrangement.spacedBy(10.dp),contentPadding=PaddingValues(bottom=36.dp)){
    item{
@@ -221,9 +221,9 @@ fun MentoAddSheet(initial:PaymentWithInstallments?,usedCategories:List<Pair<Stri
     }
     Spacer(Modifier.height(9.dp))
     SelectField(frequencyTitle(repeat),Icons.Outlined.Repeat,{fp=true},Modifier.fillMaxWidth(),enabled=!locked)
-    if(step>0){
+    if(recurring){
      val installments=(count.toIntOrNull()?:1).coerceIn(1,360)
-     val finalDue=date(addPersianMonths(due,(installments-1)*step).toMillis())
+     val finalDue=date(scheduleDueDates(due,repeat,installments).last())
      Spacer(Modifier.height(9.dp))
      OutlinedTextField(count,{count=it.filter(Char::isDigit)},Modifier.fillMaxWidth(),enabled=!locked,label={Text(tx("تعداد اقساط","Number of installments"))},supportingText={Text(tx("سررسید نهایی: $finalDue","Final due date: $finalDue"))},shape=RoundedCornerShape(15.dp))
     }
