@@ -85,6 +85,23 @@ private fun frequencyIcon(rule:String):ImageVector=when(rule){
   dismissButton={if(customOpen)TextButton(dismiss){Text(tx("بستن","Close"))}})
 }
 
+@Composable internal fun SelectField(label:String,image:ImageVector,onClick:()->Unit,modifier:Modifier=Modifier,enabled:Boolean=true){
+ Surface(onClick=onClick,enabled=enabled,modifier=modifier.heightIn(min=48.dp),shape=RoundedCornerShape(12.dp),color=if(enabled)MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha=.4f),border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){
+  Row(Modifier.padding(horizontal=12.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically){Icon(image,null,Modifier.size(20.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(8.dp));Text(label,Modifier.weight(1f),fontSize=13.sp,fontWeight=FontWeight.Medium,maxLines=1,overflow=TextOverflow.Ellipsis);Icon(Icons.Outlined.ExpandMore,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant)}
+ }
+}
+
+@Composable internal fun CategoryDialog(selected:String,saved:List<CustomCategory>,choose:(String)->Unit,remove:(CustomCategory)->Unit,dismiss:()->Unit){
+ AlertDialog(onDismissRequest=dismiss,shape=RoundedCornerShape(24.dp),containerColor=MaterialTheme.colorScheme.surface,
+  title={Text(tx("نوع پرداخت","Payment type"),fontWeight=FontWeight.Bold,fontSize=19.sp)},
+  text={LazyColumn(Modifier.heightIn(max=360.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
+   items(builtInCategories){category->SelectionOption(lx(category),null,categoryIcon(category),selected==category,{choose(category)})}
+   if(saved.isNotEmpty())item{Text(tx("دسته‌های من","My categories"),Modifier.padding(top=6.dp,start=4.dp),fontSize=11.sp,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.onSurfaceVariant)}
+   items(saved,key={it.name}){custom->SelectionOption(custom.name,null,icon(custom.iconKey),selected==custom.name,{choose(custom.name)},trailing={IconButton({remove(custom)},Modifier.size(32.dp)){Icon(Icons.Outlined.DeleteOutline,tx("حذف دسته","Delete category"),Modifier.size(18.dp),tint=MaterialTheme.colorScheme.error)}})}
+   item{SelectionOption(lx(CUSTOM_CATEGORY),tx("یک دستهٔ جدید بساز؛ برای دفعات بعد ذخیره می‌شود","Create a new category; it is saved for next time"),Icons.Outlined.AddCircleOutline,selected==CUSTOM_CATEGORY,{choose(CUSTOM_CATEGORY)})}
+  }},confirmButton={TextButton(dismiss){Text(tx("بستن","Close"))}})
+}
+
 @Composable internal fun ReminderDialog(selected:String,choose:(String)->Unit,dismiss:()->Unit){
  AlertDialog(onDismissRequest=dismiss,shape=RoundedCornerShape(24.dp),containerColor=MaterialTheme.colorScheme.surface,
   title={Text(tx("روش یادآوری","Reminder style"),fontWeight=FontWeight.Bold,fontSize=19.sp)},
