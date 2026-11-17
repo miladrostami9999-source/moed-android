@@ -9,13 +9,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 data class BackupSummary(val items:Int,val installments:Int,val receipts:Int)
 
 object BackupManager {
- suspend fun export(context:Context,uri:Uri,dao:PaymentDao,password:String)=withContext(Dispatchers.IO){
+ suspend fun export(context:Context,uri:Uri,dao:PaymentDao,password:String){
+  val target=withContext(Dispatchers.IO){context.contentResolver.openOutputStream(uri)}?:error(tx("فایل مقصد باز نشد","Could not open the destination file"))
+  writeTo(context,target,dao,password,true)
+ }
+
+ /** Writes the encrypted backup to [target] and closes it. Receipts can be left out to keep the file small. */
+ suspend fun writeTo(context:Context,target:OutputStream,dao:PaymentDao,password:String,includeReceipts:Boolean)=withContext(Dispatchers.IO){
   val root=JSONArray()
   dao.getAll().forEach { row ->
    val item=JSONObject().apply {
@@ -31,10 +38,10 @@ object BackupManager {
    }) }
    root.put(JSONObject().put("item",item).put("installments",installments))
   }
-  val target=context.contentResolver.openOutputStream(uri)?:error(tx("فایل مقصد باز نشد","Could not open the destination file"))
+  val receiptFiles=if(includeReceipts)context.filesDir.resolve("receipts").listFiles().orEmpty().toList() else emptyList()
   BackupCrypto.encryptedOutput(target,password).use{encrypted->ZipOutputStream(encrypted).use { zip ->
     zip.putNextEntry(ZipEntry("mento.json"));zip.write(root.toString().toByteArray());zip.closeEntry()
-    context.filesDir.resolve("receipts").listFiles()?.forEach { file ->
+    receiptFiles.forEach { file ->
      zip.putNextEntry(ZipEntry("receipts/${file.name}"));file.inputStream().use{it.copyTo(zip)};zip.closeEntry()
     }
   }}

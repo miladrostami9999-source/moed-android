@@ -39,6 +39,10 @@ class AppViewModel(app:Application):AndroidViewModel(app){
  fun export(uri:Uri,password:String,onDone:(Result<Unit>)->Unit){viewModelScope.launch{onDone(runCatching<Unit>{BackupManager.export(getApplication(),uri,dao,password);Unit})}}
  fun import(uri:Uri,password:String,onDone:(Result<Unit>)->Unit){viewModelScope.launch{onDone(runCatching<Unit>{BackupManager.import(getApplication(),uri,dao,password);Unit})}}
  fun import(uri:Uri,password:String,replace:Boolean,onDone:(Result<Unit>)->Unit){viewModelScope.launch{onDone(runCatching<Unit>{BackupManager.import(getApplication(),uri,dao,password,replace);Unit})}}
+ fun autoBackupStatus()=AutoBackup.status(getApplication())
+ fun enableAutoBackup(password:String,onDone:(Result<Unit>)->Unit){viewModelScope.launch{onDone(runCatching{AutoBackup.enable(getApplication(),dao,password)})}}
+ fun backupNow(onDone:(Result<Unit>)->Unit){viewModelScope.launch{onDone(AutoBackup.runNow(getApplication(),dao))}}
+ fun disableAutoBackup(){AutoBackup.disable(getApplication())}
  fun inspectBackup(uri:Uri,password:String,onDone:(Result<BackupSummary>)->Unit){viewModelScope.launch{onDone(runCatching{BackupManager.inspect(getApplication(),uri,password)})}}
  private fun offsets(item:PaymentItem)=item.reminderOffsets.split(",").mapNotNull{it.toIntOrNull()}.ifEmpty{listOf(item.reminderDaysBefore)}
  private fun scheduleReminders(itemId:Long,index:Int,title:String,due:Long,offsets:List<Int>,mode:String,hour:Int,minute:Int){offsets.forEachIndexed{slot,days->val at=AlarmScheduler.atTime(due-days*86_400_000L,hour,minute);if(days==0||mode=="notification"||mode=="both")AlarmScheduler.schedule(getApplication(),AlarmScheduler.reminderId(itemId,index,slot,false),title,at,false,days==0);if(mode=="alarm"||mode=="both")AlarmScheduler.schedule(getApplication(),AlarmScheduler.reminderId(itemId,index,slot,true),title,at,true,days==0)}}

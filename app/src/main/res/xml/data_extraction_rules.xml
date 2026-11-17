@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the password-encrypted automatic backup file leaves the phone.
+     The database, its Keystore-bound key, settings and the saved password are never included. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="auto_backup/" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="auto_backup/" />
+    </device-transfer>
+</data-extraction-rules>
