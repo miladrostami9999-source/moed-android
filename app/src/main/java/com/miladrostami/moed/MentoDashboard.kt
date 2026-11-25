@@ -161,7 +161,7 @@ private fun dayStart(time:Long)=java.util.Calendar.getInstance().apply{timeInMil
  val due=all.filter{it.second.paidAt==null&&it.second.dueAt in window.start until window.end}.sumOf{it.second.amount}
  val average=if(paid.isEmpty())0L else total/paid.size
  val monthsWithPayments=remember(data){data.flatMap{r->r.installments.filter{it.paidAt!=null}.map{PersianDate.from(it.dueAt)}}.map{it.year to it.month}.toSet()}
- val buckets=reportBuckets(paid.map{it.second},window)
+ val bars=reportBars(paid.map{(c,i)->ReportEntry(data.first{r->r.installments.any{it.id==i.id}}.item.title,c,i.amount,i.dueAt)},window)
  LazyColumn(modifier.fillMaxSize().padding(horizontal=16.dp),verticalArrangement=Arrangement.spacedBy(10.dp),contentPadding=PaddingValues(top=6.dp,bottom=24.dp)){
   item{Text(tx("نبض پرداخت‌ها","Payment insights"),fontSize=23.sp,fontWeight=FontWeight.ExtraBold);Text(tx("تصویر روشن‌تری از پولت داشته باش","See where your money goes"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(top=4.dp))}
   item{LazyRow(horizontalArrangement=Arrangement.spacedBy(8.dp)){items(ReportRange.entries){r->FilterChip(range==r,{range=r},label={Text(when(r){ReportRange.WEEK->tx("۷ روز","7 days");ReportRange.MONTH->tx("ماهانه","Monthly");ReportRange.QUARTER->tx("۳ ماه","3 months");ReportRange.YEAR->tx("امسال","This year")})},shape=RoundedCornerShape(12.dp))}}}
@@ -183,24 +183,11 @@ private fun dayStart(time:Long)=java.util.Calendar.getInstance().apply{timeInMil
    Text("${date(window.start)} — ${date(window.end-1)}",fontSize=10.sp,color=Color.White.copy(.6f),modifier=Modifier.padding(top=6.dp))
   }}}
   item{Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){QuickMetric(tx("تعداد پرداخت","Payments"),faNumber(paid.size),tx("در بازهٔ انتخابی","in this period"),Icons.Outlined.ReceiptLong,Modifier.weight(1f));QuickMetric(tx("میانگین پرداخت","Average payment"),money(average),tx("تومان در هر پرداخت","toman per payment"),Icons.Outlined.Analytics,Modifier.weight(1f))}}
-  item{DashboardPanel(tx("روند پرداخت‌ها","Payment activity"),tx("مبلغ پرداخت‌شده در طول بازه","Amount paid over the selected period")){
-   if(total==0L)Text(tx("پس از ثبت پرداخت، نمودار اینجا شکل می‌گیرد.","Your chart will appear after you record a payment."),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(vertical=20.dp))else{
-    val max=buckets.maxOf{it.amount}.coerceAtLeast(1);val color=MaterialTheme.colorScheme.primary;val track=MaterialTheme.colorScheme.surfaceVariant;val rtl=LocalLayoutDirection.current==LayoutDirection.Rtl
-    val desc=buckets.joinToString{ "${it.label}: ${money(it.amount)} ${tx("تومان","toman")}" }
-    Canvas(Modifier.fillMaxWidth().height(96.dp).padding(top=8.dp).semantics{contentDescription=desc}){val slot=size.width/buckets.size;val width=slot*.48f;buckets.forEachIndexed{index,b->val x=slot*(if(rtl)buckets.lastIndex-index else index)+(slot-width)/2;drawRoundRect(track,Offset(x,0f),androidx.compose.ui.geometry.Size(width,size.height),androidx.compose.ui.geometry.CornerRadius(5.dp.toPx()));if(b.amount>0){val height=(b.amount.toFloat()/max)*size.height;drawRoundRect(color,Offset(x,size.height-height),androidx.compose.ui.geometry.Size(width,height),androidx.compose.ui.geometry.CornerRadius(5.dp.toPx()))}}}
-    Row(Modifier.fillMaxWidth().padding(top=6.dp)){buckets.forEach{Text(it.label,Modifier.weight(1f),fontSize=10.sp,textAlign=androidx.compose.ui.text.style.TextAlign.Center,color=MaterialTheme.colorScheme.onSurfaceVariant)}}
-   }
+  item{DashboardPanel(tx("روند پرداخت‌ها","Payment activity"),tx("روی هر ستون بزن تا مبلغ و پرداخت‌های همان تاریخ را ببینی","Tap a column to see what was paid on that date")){
+   if(total==0L)Text(tx("پس از ثبت پرداخت، نمودار اینجا شکل می‌گیرد.","Your chart will appear after you record a payment."),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(vertical=20.dp))else PaymentActivityChart(bars)
   }}
-  item{DashboardPanel(tx("پولت کجا رفته؟","Where did it go?"),tx("سهم هر دسته از پرداخت‌های ثبت‌شده","Each category’s share of recorded payments")){
-   if(categories.isEmpty())Text(tx("هنوز پرداختی در این بازه ثبت نشده.","No payments recorded in this period yet."),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(vertical=16.dp))else{
-    // simplified for compile
-    categories.take(5).forEach{(cat,amt)->
-     Row(Modifier.fillMaxWidth().padding(vertical=4.dp),horizontalArrangement=Arrangement.SpaceBetween){
-      Text(lx(cat),fontSize=13.sp)
-      Text("${money(amt)} ${tx("تومان","toman")}",fontSize=13.sp,fontWeight=FontWeight.Medium)
-     }
-    }
-   }
+  item{DashboardPanel(tx("پولت کجا رفته؟","Where did it go?"),tx("سهم هر دسته از پرداخت‌های ثبت‌شده؛ روی هر دسته بزن","Each category’s share of recorded payments; tap a category")){
+   if(categories.isEmpty())Text(tx("هنوز پرداختی در این بازه ثبت نشده.","No payments recorded in this period yet."),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(vertical=16.dp))else CategoryRingChart(categories)
   }}
  }
  if(monthPicker)MonthGridDialog(anchorYear,anchorMonth,currentMonth,monthsWithPayments,{y,m->anchorYear=y;anchorMonth=m;monthPicker=false},{monthPicker=false})

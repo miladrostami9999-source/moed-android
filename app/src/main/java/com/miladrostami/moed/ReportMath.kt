@@ -8,7 +8,14 @@ enum class ReportRange { WEEK, MONTH, QUARTER, YEAR }
 
 /** [start] inclusive, [end] exclusive. [previousStart] is where the comparison period begins (it ends at [start]). */
 data class ReportWindow(val start: Long, val end: Long, val previousStart: Long, val range: ReportRange)
-data class ReportBucket(val label: String, val amount: Long)
+/** One paid bill, with what the chart needs to describe it. */
+data class ReportEntry(val title: String, val category: String, val amount: Long, val dueAt: Long)
+
+/**
+ * One column of the activity chart: a day (7-day and monthly reports) or a month (3-month and yearly reports).
+ * [date] is the day, or the first day of the month when [daily] is false.
+ */
+data class ReportBar(val date: PersianDate, val daily: Boolean, val label: String, val amount: Long, val entries: List<ReportEntry>)
 
 private fun midnight(millis: Long, plusDays: Int): Long = Calendar.getInstance().apply {
     timeInMillis = millis
@@ -45,20 +52,24 @@ fun reportWindow(range: ReportRange, now: Long, anchor: PersianDate = PersianDat
 /** True when the installment is paid and its bill falls in [from, until), no matter when it was paid. */
 fun Installment.paidDueIn(from: Long, until: Long): Boolean = paidAt != null && dueAt >= from && dueAt < until
 
-fun reportBuckets(installments: List<Installment>, window: ReportWindow): List<ReportBucket> {
-    val weekly = window.range == ReportRange.WEEK
-    val count = if (weekly) 7 else 6
-    val duration = (window.end - window.start).coerceAtLeast(1)
-    val amounts = LongArray(count)
-    val dayStarts = (0 until 7).map { midnight(window.start, it) }
-    installments.forEach { installment ->
-        if (!installment.paidDueIn(window.start, window.end)) return@forEach
-        val index = if (weekly) dayStarts.indexOfLast { it <= installment.dueAt }.coerceAtLeast(0)
-        else ((installment.dueAt - window.start).toDouble() / duration * count).toInt().coerceIn(0, count - 1)
-        amounts[index] += installment.amount
+private fun nextDay(date: PersianDate): PersianDate = PersianDate.from(date.toMillis() + 86_400_000L)
+
+/** One bar per day or per month of [window], each with the total and the bills that fall in it (by due date). */
+fun reportBars(entries: List<ReportEntry>, window: ReportWindow): List<ReportBar> {
+    val daily = window.range == ReportRange.WEEK || window.range == ReportRange.MONTH
+    fun bucketOf(date: PersianDate) = if (daily) date else PersianDate(date.year, date.month, 1)
+    val dates = mutableListOf<PersianDate>()
+    var cursor = bucketOf(PersianDate.from(window.start))
+    while (cursor.toMillis() < window.end) {
+        dates += cursor
+        cursor = if (daily) nextDay(cursor) else addPersianMonths(cursor, 1)
     }
-    return (0 until count).map { index ->
-        val date = PersianDate.from(if (weekly) dayStarts[index] else window.start + duration * index / count)
-        ReportBucket("${faNumber(date.month)}/${faNumber(date.day)}", amounts[index])
+    val grouped = entries
+        .filter { it.dueAt >= window.start && it.dueAt < window.end }
+        .groupBy { bucketOf(PersianDate.from(it.dueAt)) }
+    return dates.map { date ->
+        val inBar = grouped[date].orEmpty().sortedByDescending { it.amount }
+        val label = if (daily) "${faNumber(date.month)}/${faNumber(date.day)}" else persianMonthName(date.month)
+        ReportBar(date, daily, label, inBar.sumOf { it.amount }, inBar)
     }
 }

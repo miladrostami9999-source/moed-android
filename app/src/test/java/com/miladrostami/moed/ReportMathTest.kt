@@ -9,6 +9,7 @@ class ReportMathTest {
     private fun day(y: Int, m: Int, d: Int) = PersianDate(y, m, d).toMillis()
     private fun bill(amount: Long, due: Long, paid: Long?) =
         Installment(paymentItemId = 1, sequence = 1, amount = amount, dueAt = due, paidAt = paid)
+    private fun entry(amount: Long, due: Long, title: String = "x") = ReportEntry(title, "قبض", amount, due)
 
     @Test fun monthWindowCoversExactlyTheWholeMonth() {
         val now = day(1405, 8, 15) + 12 * 3_600_000L
@@ -60,51 +61,103 @@ class ReportMathTest {
         val lastMonth = reportWindow(ReportRange.MONTH, today, PersianDate(1405, 7, 1))
         assertFalse(lastMonthBill.paidDueIn(thisMonth.start, thisMonth.end))
         assertTrue(lastMonthBill.paidDueIn(lastMonth.start, lastMonth.end))
-        assertEquals(0L, reportBuckets(listOf(lastMonthBill), thisMonth).sumOf { it.amount })
-        assertEquals(100L, reportBuckets(listOf(lastMonthBill), lastMonth).sumOf { it.amount })
     }
 
     @Test fun billPaidAfterTheDeadlineStillCountsInItsDueMonth() {
         val w = reportWindow(ReportRange.MONTH, day(1405, 8, 15))
-        val late = bill(300, due = day(1405, 8, 5), paid = day(1405, 9, 10))
-        assertTrue(late.paidDueIn(w.start, w.end))
-        assertEquals(300L, reportBuckets(listOf(late), w).sumOf { it.amount })
+        assertTrue(bill(300, due = day(1405, 8, 5), paid = day(1405, 9, 10)).paidDueIn(w.start, w.end))
     }
 
     @Test fun billPaidEarlyCountsInTheMonthItIsDue() {
         val early = bill(400, due = day(1405, 9, 10), paid = day(1405, 8, 15))
-        val nov = reportWindow(ReportRange.MONTH, day(1405, 8, 15))
-        val dec = reportWindow(ReportRange.MONTH, day(1405, 8, 15), PersianDate(1405, 9, 1))
-        assertFalse(early.paidDueIn(nov.start, nov.end))
-        assertTrue(early.paidDueIn(dec.start, dec.end))
+        val aban = reportWindow(ReportRange.MONTH, day(1405, 8, 15))
+        val azar = reportWindow(ReportRange.MONTH, day(1405, 8, 15), PersianDate(1405, 9, 1))
+        assertFalse(early.paidDueIn(aban.start, aban.end))
+        assertTrue(early.paidDueIn(azar.start, azar.end))
     }
 
-    @Test fun unpaidAndOutOfWindowBillsAreIgnoredAndBoundsAreHalfOpen() {
+    @Test fun unpaidBillsNeverCount() {
         val w = reportWindow(ReportRange.MONTH, day(1405, 8, 15))
-        val items = listOf(
-            bill(100, w.start, w.start),            // first instant: counted, first bucket
-            bill(200, w.end - 1, w.end + 50),       // last instant: counted, last bucket
-            bill(500, day(1405, 8, 10), null),      // unpaid
-            bill(600, w.start - 1, w.start),        // previous month
-            bill(700, w.end, w.end)                 // next month starts exactly at end
+        assertFalse(bill(500, due = day(1405, 8, 10), paid = null).paidDueIn(w.start, w.end))
+    }
+
+    @Test fun monthlyReportHasOneBarPerDayOfThatMonth() {
+        val now = day(1405, 8, 15)
+        assertEquals(30, reportBars(emptyList(), reportWindow(ReportRange.MONTH, now)).size)            // Aban
+        assertEquals(31, reportBars(emptyList(), reportWindow(ReportRange.MONTH, now, PersianDate(1405, 1, 1))).size)
+        assertEquals(29, reportBars(emptyList(), reportWindow(ReportRange.MONTH, now, PersianDate(1404, 12, 1))).size)
+        val bars = reportBars(emptyList(), reportWindow(ReportRange.MONTH, now))
+        assertEquals(PersianDate(1405, 8, 1), bars.first().date)
+        assertEquals(PersianDate(1405, 8, 30), bars.last().date)
+        assertTrue(bars.all { it.daily && it.amount == 0L && it.entries.isEmpty() })
+    }
+
+    @Test fun eachBarCarriesTheDateAmountAndTheBillsOfThatDay() {
+        val w = reportWindow(ReportRange.MONTH, day(1405, 8, 15))
+        val bars = reportBars(
+            listOf(
+                entry(2_500_000, day(1405, 8, 16), "Rent"),
+                entry(300_000, day(1405, 8, 16), "Water"),
+                entry(90_000, day(1405, 8, 17), "Phone")
+            ), w
         )
-        val buckets = reportBuckets(items, w)
-        assertEquals(300L, buckets.sumOf { it.amount })
-        assertEquals(100L, buckets.first().amount)
-        assertEquals(200L, buckets.last().amount)
+        val sixteenth = bars.single { it.date == PersianDate(1405, 8, 16) }
+        assertEquals(2_800_000L, sixteenth.amount)
+        assertEquals(listOf("Rent", "Water"), sixteenth.entries.map { it.title }) // largest first
+        assertEquals(90_000L, bars.single { it.date == PersianDate(1405, 8, 17) }.amount)
+        assertEquals(2_890_000L, bars.sumOf { it.amount })
+        assertEquals(0L, bars.single { it.date == PersianDate(1405, 8, 15) }.amount)
     }
 
-    @Test fun emptyChartIsSafe() {
-        val now = day(1405, 8, 1)
-        assertTrue(reportBuckets(emptyList(), reportWindow(ReportRange.MONTH, now)).all { it.amount == 0L })
+    @Test fun billsOutsideTheWindowAreIgnoredAndBoundsAreHalfOpen() {
+        val w = reportWindow(ReportRange.MONTH, day(1405, 8, 15))
+        val bars = reportBars(
+            listOf(
+                entry(100, w.start),            // first instant: counted, first bar
+                entry(200, w.end - 1 + 0),      // still before the next month starts at noon
+                entry(600, w.start - 1),        // previous month
+                entry(700, w.end)               // next month starts exactly at end
+            ), w
+        )
+        assertEquals(100L, bars.first().amount)
+        assertEquals(300L, bars.sumOf { it.amount })
     }
 
-    @Test fun weeklyChartUsesSevenDistinctDaysAndCountsDueDates() {
+    @Test fun weeklyReportHasSevenDailyBarsEndingToday() {
         val now = day(1405, 8, 15) + 6 * 3_600_000L
-        val w = reportWindow(ReportRange.WEEK, now)
-        val buckets = reportBuckets(listOf(bill(50, day(1405, 8, 15), now)), w)
-        assertEquals(7, buckets.size)
-        assertEquals(7, buckets.map { it.label }.distinct().size)
-        assertEquals(50L, buckets.last().amount)
+        val bars = reportBars(listOf(entry(50, day(1405, 8, 15)), entry(70, day(1405, 8, 9))), reportWindow(ReportRange.WEEK, now))
+        assertEquals(7, bars.size)
+        assertEquals(7, bars.map { it.label }.distinct().size)
+        assertEquals(PersianDate(1405, 8, 9), bars.first().date)
+        assertEquals(PersianDate(1405, 8, 15), bars.last().date)
+        assertEquals(70L, bars.first().amount)
+        assertEquals(50L, bars.last().amount)
+    }
+
+    @Test fun quarterAndYearReportsHaveOneBarPerMonth() {
+        val now = day(1405, 8, 15)
+        val quarter = reportBars(listOf(entry(10, day(1405, 7, 3)), entry(20, day(1405, 7, 28)), entry(5, day(1405, 6, 30))), reportWindow(ReportRange.QUARTER, now))
+        assertEquals(listOf(6, 7, 8), quarter.map { it.date.month })
+        assertTrue(quarter.none { it.daily })
+        assertEquals(listOf(5L, 30L, 0L), quarter.map { it.amount })
+        val year = reportBars(emptyList(), reportWindow(ReportRange.YEAR, now))
+        assertEquals((1..12).toList(), year.map { it.date.month })
+        assertEquals(12, year.map { it.label }.distinct().size)
+    }
+
+    @Test fun billPaidTodayForLastMonthDoesNotAppearInThisMonthsBars() {
+        val today = day(1405, 8, 15)
+        val lastMonthEntry = entry(100, day(1405, 7, 20))
+        assertEquals(0L, reportBars(listOf(lastMonthEntry), reportWindow(ReportRange.MONTH, today)).sumOf { it.amount })
+        assertEquals(100L, reportBars(listOf(lastMonthEntry), reportWindow(ReportRange.MONTH, today, PersianDate(1405, 7, 1))).sumOf { it.amount })
+    }
+
+    @Test fun compactAmountsAreShortAndReadable() {
+        assertEquals("950", compactAmount(950))
+        assertEquals("1.5K", compactAmount(1_500))
+        assertEquals("500K", compactAmount(500_000))
+        assertEquals("2.5M", compactAmount(2_500_000))
+        assertEquals("12M", compactAmount(12_000_000))
+        assertEquals("3.2B", compactAmount(3_200_000_000))
     }
 }
