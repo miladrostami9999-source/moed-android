@@ -114,7 +114,7 @@ class ReportMathTest {
         val bars = reportBars(
             listOf(
                 entry(100, w.start),            // first instant: counted, first bar
-                entry(200, w.end - 1 + 0),      // still before the next month starts at noon
+                entry(200, w.end - 86_400_000L), // last day of the month
                 entry(600, w.start - 1),        // previous month
                 entry(700, w.end)               // next month starts exactly at end
             ), w
