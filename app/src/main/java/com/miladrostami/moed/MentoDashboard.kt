@@ -82,9 +82,9 @@ private val ChartColors=listOf(Blue,Color(0xFF43C7AC),Color(0xFF9BAEF5),Color(0x
   text={
    Column(verticalArrangement=Arrangement.spacedBy(8.dp)){
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
-     IconButton({shownYear--}){Icon(Icons.Outlined.ChevronRight,tx("سال قبل","Previous year"))}
+     IconButton({shownYear--}){Icon(if(LocalLayoutDirection.current==LayoutDirection.Rtl)Icons.Outlined.ChevronRight else Icons.Outlined.ChevronLeft,tx("سال قبل","Previous year"))}
      Text(faNumber(shownYear),fontWeight=FontWeight.ExtraBold,fontSize=18.sp)
-     IconButton({shownYear++}){Icon(Icons.Outlined.ChevronLeft,tx("سال بعد","Next year"))}
+     IconButton({shownYear++}){Icon(if(LocalLayoutDirection.current==LayoutDirection.Rtl)Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight,tx("سال بعد","Next year"))}
     }
     (1..12).chunked(3).forEach{row->
      Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){
@@ -149,22 +149,38 @@ private val ChartColors=listOf(Blue,Color(0xFF43C7AC),Color(0xFF9BAEF5),Color(0x
 private fun dayStart(time:Long)=java.util.Calendar.getInstance().apply{timeInMillis=time;set(java.util.Calendar.HOUR_OF_DAY,0);set(java.util.Calendar.MINUTE,0);set(java.util.Calendar.SECOND,0);set(java.util.Calendar.MILLISECOND,0)}.timeInMillis
 
 @Composable fun MentoReportScreen(data:List<PaymentWithInstallments>,modifier:Modifier){
- var range by remember{mutableStateOf(ReportRange.MONTH)};val now=System.currentTimeMillis();val window=reportWindow(range,now)
+ var range by remember{mutableStateOf(ReportRange.MONTH)};val now=System.currentTimeMillis();val currentMonth=PersianDate.from(now)
+ var anchorYear by remember{mutableIntStateOf(currentMonth.year)};var anchorMonth by remember{mutableIntStateOf(currentMonth.month)};var monthPicker by remember{mutableStateOf(false)}
+ val isCurrentMonth=anchorYear==currentMonth.year&&anchorMonth==currentMonth.month
+ val isRtl=LocalLayoutDirection.current==LayoutDirection.Rtl
+ val window=reportWindow(range,now,if(range==ReportRange.MONTH)PersianDate(anchorYear,anchorMonth,1) else currentMonth)
  val all=data.flatMap{r->r.installments.map{r.item.category to it}}
- val paid=all.filter{it.second.paidAt?.let{t->t in window.start..now}==true}
- val total=paid.sumOf{it.second.amount};val previous=all.filter{it.second.paidAt?.let{t->t in window.previousStart until window.start}==true}.sumOf{it.second.amount}
+ val paid=all.filter{it.second.paidDueIn(window.start,window.end)}
+ val total=paid.sumOf{it.second.amount};val previous=all.filter{it.second.paidDueIn(window.previousStart,window.start)}.sumOf{it.second.amount}
  val categories=paid.groupBy{it.first}.map{(k,v)->k to v.sumOf{it.second.amount}}.sortedByDescending{it.second}
  val due=all.filter{it.second.paidAt==null&&it.second.dueAt in window.start until window.end}.sumOf{it.second.amount}
  val average=if(paid.isEmpty())0L else total/paid.size
- val buckets=reportBuckets(paid.map{it.second},window,now)
+ val monthsWithPayments=remember(data){data.flatMap{r->r.installments.filter{it.paidAt!=null}.map{PersianDate.from(it.dueAt)}}.map{it.year to it.month}.toSet()}
+ val buckets=reportBuckets(paid.map{it.second},window)
  LazyColumn(modifier.fillMaxSize().padding(horizontal=16.dp),verticalArrangement=Arrangement.spacedBy(10.dp),contentPadding=PaddingValues(top=6.dp,bottom=24.dp)){
   item{Text(tx("نبض پرداخت‌ها","Payment insights"),fontSize=23.sp,fontWeight=FontWeight.ExtraBold);Text(tx("تصویر روشن‌تری از پولت داشته باش","See where your money goes"),fontSize=12.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(top=4.dp))}
-  item{LazyRow(horizontalArrangement=Arrangement.spacedBy(8.dp)){items(ReportRange.entries){r->FilterChip(range==r,{range=r},label={Text(when(r){ReportRange.WEEK->tx("۷ روز","7 days");ReportRange.MONTH->tx("این ماه","This month");ReportRange.QUARTER->tx("۳ ماه","3 months");ReportRange.YEAR->tx("امسال","This year")})},shape=RoundedCornerShape(12.dp))}}}
+  item{LazyRow(horizontalArrangement=Arrangement.spacedBy(8.dp)){items(ReportRange.entries){r->FilterChip(range==r,{range=r},label={Text(when(r){ReportRange.WEEK->tx("۷ روز","7 days");ReportRange.MONTH->tx("ماهانه","Monthly");ReportRange.QUARTER->tx("۳ ماه","3 months");ReportRange.YEAR->tx("امسال","This year")})},shape=RoundedCornerShape(12.dp))}}}
+  if(range==ReportRange.MONTH)item{Column(verticalArrangement=Arrangement.spacedBy(2.dp)){
+   Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
+    IconButton({val t=addPersianMonths(PersianDate(anchorYear,anchorMonth,1),-1);anchorYear=t.year;anchorMonth=t.month}){Icon(if(isRtl)Icons.Outlined.ChevronRight else Icons.Outlined.ChevronLeft,tx("ماه قبل","Previous month"))}
+    Surface(onClick={monthPicker=true},modifier=Modifier.weight(1f),shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surface,border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)){
+     Row(Modifier.padding(vertical=10.dp),horizontalArrangement=Arrangement.Center,verticalAlignment=Alignment.CenterVertically){Text("${persianMonthName(anchorMonth)} ${faNumber(anchorYear)}",fontSize=16.sp,fontWeight=FontWeight.ExtraBold);Icon(Icons.Outlined.ExpandMore,tx("انتخاب ماه","Select month"),tint=MaterialTheme.colorScheme.primary)}
+    }
+    IconButton({val t=addPersianMonths(PersianDate(anchorYear,anchorMonth,1),1);anchorYear=t.year;anchorMonth=t.month}){Icon(if(isRtl)Icons.Outlined.ChevronLeft else Icons.Outlined.ChevronRight,tx("ماه بعد","Next month"))}
+   }
+   Text(tx("فقط پرداخت‌های مربوط به صورت‌حساب‌های این ماه، صرف‌نظر از روز ثبت پرداخت","Only bills due in this month, no matter when you recorded the payment"),fontSize=11.sp,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.padding(horizontal=8.dp))
+   if(!isCurrentMonth)TextButton({anchorYear=currentMonth.year;anchorMonth=currentMonth.month}){Text(tx("بازگشت به ماه جاری","Back to current month"))}
+  }}
   item{Card(shape=RoundedCornerShape(20.dp),colors=CardDefaults.cardColors(containerColor=NightBlue,contentColor=Color.White)){Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(NightBlue,Color(0xFF193B5A)))).padding(16.dp)){
    Row(verticalAlignment=Alignment.CenterVertically){Icon(Icons.Outlined.Insights,null,tint=Mint,modifier=Modifier.size(20.dp));Spacer(Modifier.width(8.dp));Text(tx("مجموع پرداخت‌های ثبت‌شده","TOTAL PAID"),fontSize=11.sp,color=Color.White.copy(.75f))}
    Row(Modifier.fillMaxWidth().padding(top=6.dp),verticalAlignment=Alignment.CenterVertically){AmountText(total,fontSize=28.sp,fontWeight=FontWeight.ExtraBold,color=Mint,modifier=Modifier.weight(1f));Text(tx("تومان","toman"),fontSize=11.sp,color=Color.White.copy(.7f),modifier=Modifier.padding(start=8.dp))};Text(amountWords(total),fontSize=10.sp,lineHeight=14.sp,color=Mint.copy(.8f),maxLines=2,overflow=TextOverflow.Ellipsis)
    Spacer(Modifier.height(6.dp));Text(if(previous==0L)tx("در دورهٔ قبل پرداختی ثبت نشده","No payments recorded in the previous period")else{val percent=(total.toDouble()-previous)*100/previous;tx("${faNumber(kotlin.math.abs(percent).toInt())}٪ ${if(percent>=0)"بیشتر" else "کمتر"} از دورهٔ قبل","${kotlin.math.abs(percent).toInt()}% ${if(percent>=0)"more" else "less"} than the previous period")},fontSize=10.sp,color=Color.White.copy(.8f))
-   Text("${date(window.start)} — ${date(now)}",fontSize=10.sp,color=Color.White.copy(.6f),modifier=Modifier.padding(top=6.dp))
+   Text("${date(window.start)} — ${date(window.end-1)}",fontSize=10.sp,color=Color.White.copy(.6f),modifier=Modifier.padding(top=6.dp))
   }}}
   item{Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){QuickMetric(tx("تعداد پرداخت","Payments"),faNumber(paid.size),tx("در بازهٔ انتخابی","in this period"),Icons.Outlined.ReceiptLong,Modifier.weight(1f));QuickMetric(tx("میانگین پرداخت","Average payment"),money(average),tx("تومان در هر پرداخت","toman per payment"),Icons.Outlined.Analytics,Modifier.weight(1f))}}
   item{DashboardPanel(tx("روند پرداخت‌ها","Payment activity"),tx("مبلغ پرداخت‌شده در طول بازه","Amount paid over the selected period")){
@@ -187,4 +203,5 @@ private fun dayStart(time:Long)=java.util.Calendar.getInstance().apply{timeInMil
    }
   }}
  }
+ if(monthPicker)MonthGridDialog(anchorYear,anchorMonth,currentMonth,monthsWithPayments,{y,m->anchorYear=y;anchorMonth=m;monthPicker=false},{monthPicker=false})
 }
